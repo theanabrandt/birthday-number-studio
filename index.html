@@ -130,8 +130,8 @@
       </div>
 
       <div class="block">
-        <label class="fld" for="name">Name on the number <span style="color:var(--muted)">(optional)</span></label>
-        <input type="text" id="name" maxlength="24" placeholder="e.g. Ava">
+        <p class="step"><b>6</b> Size / shape</p>
+        <div class="chips" id="ratios"></div>
       </div>
 
       <div class="block">
@@ -172,7 +172,7 @@
 </div>
 
 <script>
-const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid" };
+const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5" };
 const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
@@ -201,7 +201,18 @@ buildChips('chips',[
   ["mono_blush","Monochrome Blush"],["mono_sage","Monochrome Sage"],
   ["blush_gold","Blush & Gold"],["boho_cream","Boho Cream"],
   ["floral","Abundant Florals"],["safari","Safari / Jungle"],
-  ["celestial","Celestial"]
+  ["celestial","Celestial"],["space","Space / Galaxy"],
+  ["ocean","Under the Sea"],["sweets","Cupcakes & Sweets"],
+  ["dinosaur","Dinosaur"],["princess","Princess"],
+  ["rainbow","Rainbow"],["winter","Winter ONE-derland"],
+  ["playroom","Playroom / Toys"],["farm","Farm / Barnyard"],
+  ["circus","Circus"],["butterfly","Butterfly Garden"],
+  ["teddy","Teddy Bear"],["sports","All-Star Sports"],
+  ["cars","Little Racer"],["construction","Construction"],
+  ["cloud","On Cloud Nine"],["woodland","Woodland"],
+  ["cowboy","First Rodeo"],["superhero","Superhero"],
+  ["nautical","Nautical"],["tropical","Tropical"],
+  ["pumpkin","Little Pumpkin"]
 ],'theme');
 
 buildChips('shapes',[
@@ -212,6 +223,12 @@ buildChips('shapes',[
 buildChips('cutouts',[
   ["solid","Beside the number"],["arched","Inside the number"]
 ],'cutout');
+
+buildChips('ratios',[
+  ["4:5","Portrait 4:5"],["2:3","Tall 2:3"],
+  ["1:1","Square 1:1"],["9:16","Story 9:16"],
+  ["3:2","Landscape 3:2"]
+],'ratio');
 
 /* ---- upload + client-side downscale ---- */
 $('drop').onclick=()=>$('file').click();
@@ -258,8 +275,8 @@ async function callGenerateOnce(){
     method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       number:state.number, theme:state.theme,
-      shape:state.shape, cutout:state.cutout,
-      name:$('name').value, details:$('details').value,
+      shape:state.shape, cutout:state.cutout, ratio:state.ratio,
+      details:$('details').value,
       imageBase64:state.img, mimeType:state.mime
     })
   });
@@ -333,6 +350,7 @@ function hideErr(){ $('err').style.display='none'; }
 </script>
 </body>
 </html>
+
 
 
 
