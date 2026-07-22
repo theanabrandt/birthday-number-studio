@@ -31,7 +31,29 @@ const THEMES = {
   modern_white: "A clean, modern, minimalist bright-white studio scene: crisp white architectural backdrop with a soft arch, a simple sprig of olive or eucalyptus greenery in a white vase to the side, and an airy cluster of white, clear-confetti, and silver-chrome balloons. Editorial, contemporary, uncluttered, lots of negative space. The number is bright white with soft natural shadows.",
   greige_taupe: "Modern greige and taupe palette: warm grey, mushroom, and stone tones. Balloons and a few minimal dried accents. Sophisticated, understated, contemporary. The number is a soft warm greige.",
   mono_blush: "Soft monochrome blush palette: every element - balloons, florals, backdrop - in tonal shades of blush and dusty pink. Modern and cohesive. The number is a pale blush.",
-  mono_sage: "Soft monochrome sage palette: every element in tonal shades of sage green and eucalyptus. Modern and calm. The number is a soft sage or creamy white."
+  mono_sage: "Soft monochrome sage palette: every element in tonal shades of sage green and eucalyptus. Modern and calm. The number is a soft sage or creamy white.",
+  space: "A dreamy space and galaxy theme: soft midnight-blue and cream palette with gold stars, a crescent moon, small planets, and gentle sparkle. Balloons in navy, cream, and metallic gold. Magical but soft, airy, and child-friendly.",
+  sweets: "A sweet candyland theme: soft pastel cupcakes, macarons, lollipops, and doughnuts with pink, mint, and cream balloons. Playful, sugary, cheerful, tasteful.",
+  ocean: "An under-the-sea theme: soft aqua and sand tones with coral, seashells, starfish, gentle bubbles, and a few friendly little fish. Balloons in blue, teal, and cream. Dreamy underwater light.",
+  dinosaur: "A friendly dinosaur theme: cute soft baby dinosaurs, tropical leaves, and sage-green, tan, and cream balloons. Playful 'dino' world, gentle and child-friendly, not scary.",
+  princess: "A fairytale princess theme: soft castle turrets, a delicate tiara, twinkling fairy lights, roses, and blush, ivory, and gold balloons. Enchanted and elegant. Generic fairytale only - no branded or copyrighted characters.",
+  rainbow: "A bright rainbow theme: a cheerful soft pastel rainbow arch, fluffy clouds, and balloons in gentle pastel colours. Happy and playful but still tasteful and airy.",
+  winter: "A Winter ONE-derland theme: soft white and icy-blue palette with gentle snowflakes, frosted greenery, pinecones, and white and silver balloons. Cozy, magical, airy winter.",
+  playroom: "A playful playroom toy-adventure theme: soft toy building blocks, a toy rocket, a little cowboy hat, star cushions, and soft primary-colour balloons. Fun toy vibe using ONLY generic, non-branded toys - absolutely no cartoon characters, mascots, or logos.",
+  farm: "A cozy farm / barnyard theme: soft hay bales, sunflowers, a red-barn accent, and gentle cartoon-soft farm animals (chick, lamb, calf). Warm tan, cream, and red balloons. Child-friendly and wholesome.",
+  circus: "A vintage circus / carnival theme: soft red-and-cream striped accents, bunting flags, star garlands, and playful balloons. Whimsical big-top feeling, gentle and tasteful.",
+  butterfly: "A butterfly garden theme: delicate pastel butterflies, wildflowers, greenery, and soft blush, lavender, and cream balloons. Airy, whimsical, spring-like.",
+  teddy: "A teddy bear picnic theme: soft plush teddy bears, gingham accents, honey and cream tones, daisies, and tan and cream balloons. Cozy, cuddly, nostalgic.",
+  sports: "An all-star sports theme: soft generic sports balls (no team logos), pennant flags, and clean navy, cream, and green balloons. Playful and energetic but tasteful. No branded teams or logos.",
+  cars: "A little-racer theme: soft generic toy race cars (no brand names or logos), checkered-flag accents, and red, black, and cream balloons. Fun and playful. No branded car characters.",
+  construction: "A construction theme: soft toy dump trucks and diggers, tiny traffic cones, and yellow, tan, and cream balloons. Playful little-builder vibe. Generic toys only, no logos.",
+  cloud: "An 'on cloud nine' theme: soft fluffy white clouds, a gentle rainbow hint, and pale blue, white, and cream balloons. Dreamy, soft, airy pastel sky.",
+  woodland: "A woodland forest theme: soft toadstools, ferns, pinecones, and gentle cartoon-soft forest animals (fox, deer, bunny). Sage, tan, and cream balloons. Cozy storybook forest.",
+  cowboy: "A 'first rodeo' wild-west theme: soft cowboy hat, bandana accents, hay, and tan, rust, and cream balloons. Warm, playful western vibe. Generic only, no branded characters.",
+  superhero: "A little-superhero theme: soft comic-burst accents, a generic cape, star shapes, and bold-but-soft red, blue, and cream balloons. Playful hero vibe using ONLY generic elements - no branded superheroes, suits, or logos.",
+  nautical: "A nautical theme: soft sailboats, anchors, rope accents, and navy, white, and cream balloons. Fresh seaside vibe, clean and tasteful.",
+  tropical: "A tropical luau theme: soft monstera and palm leaves, hibiscus flowers, pineapple accents, and green, coral, and cream balloons. Sunny, playful, island vibe.",
+  pumpkin: "A 'little pumpkin' autumn theme: soft pumpkins, wheat, warm fall foliage, and rust, cream, and sage balloons. Cozy harvest vibe, warm and gentle."
 };
 
 exports.handler = async (event) => {
@@ -81,7 +103,7 @@ exports.handler = async (event) => {
     }
   }
 
-  const { number, theme, shape, cutout, details, name, imageBase64, mimeType } = body;
+  const { number, theme, shape, cutout, details, imageBase64, mimeType } = body;
   if (!imageBase64) return json(400, cors, { error: "Please upload a child photo first." });
 
   const n = String(number || "1").replace(/[^0-9]/g, "").slice(0, 2) || "1";
@@ -89,8 +111,9 @@ exports.handler = async (event) => {
   const shapeText = SHAPES[shape] || SHAPES.rounded;
   const isSolid = cutout === "solid";
   const extra = (details || "").toString().slice(0, 400).trim();
-  const nameLine = (name || "").toString().slice(0, 24).trim();
   const shellRef = (isSolid ? SHELLS.solid : SHELLS.arched)[n];
+  const RATIOS = ["4:5","2:3","1:1","9:16","3:2","3:4","4:3","5:4","16:9"];
+  const ratio = RATIOS.includes(body.ratio) ? body.ratio : "4:5";
 
   const childPlacement = isSolid
     ? `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if they are standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
@@ -111,7 +134,7 @@ exports.handler = async (event) => {
     `Keep the child's face, skin tone, hair, features, outfit, and pose as close as possible to Image 1 - do not restyle the child or change their clothes or pose.`,
     themeText,
     realism,
-    nameLine ? `Add the name "${nameLine}" once in refined thin script on the front face of the number (the only text allowed).` : "No text anywhere in the image.",
+    "Do NOT render any text, letters, names, or numbers-as-text anywhere in the image.",
     extra ? `Extra direction: ${extra}` : "",
     BRAND
   ].filter(Boolean).join("\n\n");
@@ -122,7 +145,7 @@ exports.handler = async (event) => {
   ];
   if (shellRef) input.push({ type: "image", mime_type: "image/jpeg", data: shellRef });
 
-  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: "4:5", image_size: "1K" } };
+  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: ratio, image_size: "1K" } };
 
   try {
     const resp = await fetch(ENDPOINT, {
@@ -149,6 +172,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
