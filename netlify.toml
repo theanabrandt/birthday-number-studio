@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# If you hit "generation timed out", raise this (requires a paid Netlify tier).
+# Nano Banana 2 usually returns within ~10–20s.
+[functions.generate]
+  timeout = 26
