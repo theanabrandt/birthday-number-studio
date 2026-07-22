@@ -93,8 +93,8 @@ exports.handler = async (event) => {
   const shellRef = (isSolid ? SHELLS.solid : SHELLS.arched)[n];
 
   const childPlacement = isSolid
-    ? `CRITICAL - the child: take the child from Image 1 and place them standing or sitting directly in FRONT of the solid number, slightly overlapping it, as the clear main focal point, large and prominent. The number has NO interior cutout - it is a solid numeral.`
-    : `CRITICAL - the child: take the child from Image 1 and place them seated within or peeking through the number's arched cutout opening as the clear main focal point, large and prominent - not small or distant.`;
+    ? `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if they are standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
+    : `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — standing stays standing, sitting stays sitting; preserve their posture, stance, arms, and legs. Position them at the number's arched cutout opening as the clear main focal point, large and prominent, WITHOUT changing their pose.`;
 
   const numberLine = isSolid
     ? `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
@@ -108,7 +108,7 @@ exports.handler = async (event) => {
     `Create ONE photorealistic milestone birthday portrait built around this giant, freestanding, matte sculptural numeral "${n}".`,
     shapeText,
     childPlacement,
-    `Keep the child's face, skin tone, hair, and features as close as possible to Image 1 - do not restyle the face.`,
+    `Keep the child's face, skin tone, hair, features, outfit, and pose as close as possible to Image 1 - do not restyle the child or change their clothes or pose.`,
     themeText,
     realism,
     nameLine ? `Add the name "${nameLine}" once in refined thin script on the front face of the number (the only text allowed).` : "No text anywhere in the image.",
@@ -149,6 +149,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
