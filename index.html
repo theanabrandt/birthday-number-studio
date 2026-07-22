@@ -172,7 +172,7 @@
 </div>
 
 <script>
-const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"arched" };
+const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid" };
 const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
@@ -209,7 +209,7 @@ buildChips('shapes',[
 ],'shape');
 
 buildChips('cutouts',[
-  ["arched","Inside the number"],["solid","Beside the number"]
+  ["solid","Beside the number"],["arched","Inside the number"]
 ],'cutout');
 
 /* ---- upload + client-side downscale ---- */
@@ -332,4 +332,5 @@ function hideErr(){ $('err').style.display='none'; }
 </script>
 </body>
 </html>
+
 
