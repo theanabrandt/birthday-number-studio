@@ -121,7 +121,7 @@ exports.handler = async (event) => {
   ];
   if (shellRef) input.push({ type: "image", mime_type: "image/jpeg", data: shellRef });
 
-  const payload = { model: MODEL, input, generation_config: { thinking_level: "high" }, response_format: { type: "image", aspect_ratio: "4:5", image_size: "2K" } };
+  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: "4:5", image_size: "1K" } };
 
   try {
     const resp = await fetch(ENDPOINT, {
