@@ -28,6 +28,7 @@ const THEMES = {
   safari: "Surround the number with a soft jungle/safari world: monstera and palm leaves, white florals, sage and tan balloons, and a couple of realistic baby safari animals at a gentle child-friendly scale.",
   celestial: "Surround the base with cream and pale-gold balloons and subtle star and moon accents. Airy celestial palette.",
   white_tonal: "All-white tonal palette: barely-there ivory, chalk, and soft white balloons and accents, nearly monochrome white-on-white. Very clean, minimal, modern. The number is bright white.",
+  modern_white: "A clean, modern, minimalist bright-white studio scene: crisp white architectural backdrop with a soft arch, a simple sprig of olive or eucalyptus greenery in a white vase to the side, and an airy cluster of white, clear-confetti, and silver-chrome balloons. Editorial, contemporary, uncluttered, lots of negative space. The number is bright white with soft natural shadows.",
   greige_taupe: "Modern greige and taupe palette: warm grey, mushroom, and stone tones. Balloons and a few minimal dried accents. Sophisticated, understated, contemporary. The number is a soft warm greige.",
   mono_blush: "Soft monochrome blush palette: every element - balloons, florals, backdrop - in tonal shades of blush and dusty pink. Modern and cohesive. The number is a pale blush.",
   mono_sage: "Soft monochrome sage palette: every element in tonal shades of sage green and eucalyptus. Modern and calm. The number is a soft sage or creamy white."
@@ -148,5 +149,6 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
