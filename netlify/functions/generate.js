@@ -48,6 +48,38 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || "{}"); } catch { return json(400, cors, { error: "Bad request." }); }
 
+  // --- Validation mode: does the generated image clearly show numeral N? ---
+  // Fail-open: any error returns matches:true so we never block a result.
+  if (body.mode === "validate") {
+    const vn = String(body.number || "1").replace(/[^0-9]/g, "").slice(0, 2) || "1";
+    if (!body.image) return json(200, cors, { matches: true });
+    try {
+      const vResp = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent",
+        {
+          method: "POST",
+          headers: { "x-goog-api-key": KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: `Look at this image. Is the large sculptural birthday-number prop clearly and unmistakably the digit "${vn}" (readable as the number ${vn})? Reply with exactly one word: YES or NO.` },
+                { inline_data: { mime_type: body.mimeType || "image/jpeg", data: body.image } }
+              ]
+            }]
+          })
+        }
+      );
+      const vData = await vResp.json().catch(() => ({}));
+      const txt = (vData?.candidates?.[0]?.content?.parts || [])
+        .map(p => p.text || "").join(" ").trim().toUpperCase();
+      // matches unless it clearly said NO
+      const matches = !/\bNO\b/.test(txt) || /\bYES\b/.test(txt);
+      return json(200, cors, { matches });
+    } catch (e) {
+      return json(200, cors, { matches: true });
+    }
+  }
+
   const { number, theme, shape, cutout, details, name, imageBase64, mimeType } = body;
   if (!imageBase64) return json(400, cors, { error: "Please upload a child photo first." });
 
@@ -64,17 +96,20 @@ exports.handler = async (event) => {
     : `CRITICAL - the child: take the child from Image 1 and place them INSIDE the number's arched cutout opening, filling that opening as the clear main focal point, large and prominent - not small or distant.`;
 
   const numberLine = isSolid
-    ? `CRITICAL - the number: reproduce the numeral "${n}" as a SOLID shape with the same identity, proportions, and orientation as in Image 2 (ignore any interior shading - make it fully solid, no window). It must read clearly as the number ${n}. Do NOT invent letters or other shapes. Render it as a real dimensional prop about the full height of the frame, standing on the floor.`
-    : `CRITICAL - the number: reproduce the numeral "${n}" with the same shape, proportions, and orientation as in Image 2, including its tall arched interior cutout opening. It must read clearly as the number ${n}. Do NOT invent letters, mirrors, frames, or other shapes. Render it as a real dimensional prop about the full height of the frame, standing on the floor.`;
+    ? `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
+    : `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2, including its tall arched interior cutout. It is the number ${n} — not a plain arch, not a letter, not a mirror, not an abstract shape. If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`;
+
+  const realism = `Make it look like a real, professional studio photograph: true-to-life textures, natural soft studio lighting, realistic shadows and depth of field, believable materials. Not illustrated, not 3D-cartoon, not flat.`;
 
   const prompt = [
-    `You are given two images. Image 1 is a photo of a child. Image 2 shows the shape of a large numeral "${n}".`,
-    `Create ONE photorealistic milestone birthday portrait built around a giant, freestanding, matte sculptural numeral "${n}".`,
+    `You are given two images. Image 1 is a photo of a child. Image 2 shows the exact shape of a large numeral "${n}".`,
     numberLine,
+    `Create ONE photorealistic milestone birthday portrait built around this giant, freestanding, matte sculptural numeral "${n}".`,
     shapeText,
     childPlacement,
-    `Keep the child's face, skin tone, hair, and features EXACTLY as in Image 1 - do not restyle the face.`,
+    `Keep the child's face, skin tone, hair, and features as close as possible to Image 1 - do not restyle the face.`,
     themeText,
+    realism,
     nameLine ? `Add the name "${nameLine}" once in refined thin script on the front face of the number (the only text allowed).` : "No text anywhere in the image.",
     extra ? `Extra direction: ${extra}` : "",
     BRAND
@@ -86,7 +121,7 @@ exports.handler = async (event) => {
   ];
   if (shellRef) input.push({ type: "image", mime_type: "image/jpeg", data: shellRef });
 
-  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: "4:5", image_size: "2K" } };
+  const payload = { model: MODEL, input, generation_config: { thinking_level: "high" }, response_format: { type: "image", aspect_ratio: "4:5", image_size: "2K" } };
 
   try {
     const resp = await fetch(ENDPOINT, {
@@ -113,3 +148,4 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
