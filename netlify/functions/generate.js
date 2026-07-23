@@ -8,7 +8,7 @@ const BRAND = `
 Brand + quality rules (follow exactly):
 - Editorial, clean, soft directional window light. Textured plaster or seamless studio backdrop. Never busy or cluttered.
 - Do NOT render any words, captions, logos, or watermarks in the image. If a name is provided, it may appear once as refined thin script on the front face of the number, and nowhere else.
-- Photorealistic studio portrait-photography look. Natural depth of field. One person only.
+- Photorealistic portrait-photography look. Natural depth of field. One subject only, and it must be the one from Image 1.
 `.trim();
 
 // Number finish (drives look; reference image drives the numeral identity)
@@ -70,6 +70,14 @@ const THEMES = {
   monochrome_bw: "A striking black-and-white scene: white number against a deep charcoal or black backdrop (or reverse), rendered in a monochrome palette. NO balloons, NO colour. Timeless, graphic, high-contrast editorial.",
   marble_luxe: "A luxe marble scene: soft white-and-grey veined marble backdrop and floor, an ivory or pale-gold number, slim gold accents and a single elegant floral stem. NO balloons. Refined, expensive, grown-up.",
   golden_hour: "A warm golden-hour studio scene: sun-washed backdrop with long soft window-light shadows, a warm ivory or caramel number, and a hint of haze. NO balloons, NO party props. Cinematic, romantic, editorial.",
+  /* ---- Pet friendly ---- */
+  pet_house: "A cozy rustic wooden pet house scene: a small barn-wood kennel with a pitched roof and arched opening, warm lantern light either side, plaid and cream cushions inside, a sheepskin throw, string lights, pine garland and a soft dusting of snow. Warm, golden, inviting. Charming and homey.",
+  pet_holiday: "A warm Christmas pet scene: a decorated tree with soft golden lights, wrapped gifts in kraft and cream paper, pine garland, red plaid blankets, pinecones and gentle candlelight. Cozy holiday warmth, tasteful and not garish.",
+  pet_party: "A cheerful pet birthday scene: soft pastel balloons, a small paper party hat, a little dog-safe cake on a cake stand, bunting flags and confetti. Playful and sweet, clean and airy.",
+  pet_meadow: "A soft outdoor meadow scene: long grasses, wildflowers, dappled golden late-afternoon light and a gentle blurred treeline. Natural, warm, storybook.",
+  pet_studio: "A clean modern studio scene: soft seamless backdrop in a warm neutral, gentle directional light and shadow, and a few simple props at most. Minimal, editorial, lets the pet be the whole picture.",
+  pet_cozy: "A cozy fireside scene: a warm hearth glow, chunky knit blankets, a soft rug, a basket of logs and a few candles. Snug, warm and comforting.",
+
   dark_floral: "A moody dark-floral scene: deep charcoal or forest backdrop with rich dark florals — burgundy roses, plum blooms, deep greenery — around an ivory or black number. NO balloons. Dramatic, romantic, very grown-up."
 };
 
@@ -175,31 +183,53 @@ exports.handler = async (event) => {
   const seat = SEAT[n] || "beside the number";
   // Subject wording adapts: babies/kids vs teens vs adult milestones
   const age = parseInt(n,10);
-  const SUBJ = age <= 9 ? "child" : (age <= 21 ? "young person" : "person");
+  const isPet = body.subject === "pet";
+  const SUBJ = isPet ? "pet" : (age <= 9 ? "child" : (age <= 21 ? "young person" : "person"));
   const SUBJ_POS = SUBJ + "'s";
+
+  // pets read better sitting or lying naturally with the number
+  const petPlacement = isSolid
+    ? `CRITICAL - the pet: take the pet from Image 1 and place them sitting or lying naturally in FRONT of / beside the solid number as the clear main focal point, large and prominent. Keep their pose from the photo where it fits the scene.`
+    : `CRITICAL - the pet: take the pet from Image 1 and place them sitting comfortably ${seat}, as the clear main focal point, large and prominent, looking naturally settled rather than pasted in.`;
 
   const childPlacement = isSolid
     ? `CRITICAL - the subject: take the ${SUBJ} from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
     : `CRITICAL - the subject: take the ${SUBJ} from Image 1 and place them WITH the number in its natural seat — specifically ${seat} — as the clear main focal point, large and prominent, so they look nestled into or perched on the number itself (not floating separately beside it). Keep their pose natural for that spot; if the photo shows them standing you may seat or perch them so they fit the number. Preserve their face, outfit, and general look.`;
 
   const numberLine = isSolid
-    ? `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
-    : `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2, including its tall arched interior cutout. It is the number ${n} — not a plain arch, not a letter, not a mirror, not an abstract shape. If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`;
+    ? `The giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
+    : `The giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2, including its tall arched interior cutout. It is the number ${n} — not a plain arch, not a letter, not a mirror, not an abstract shape. If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`;
 
   const realism = `Make it look like a real, professional studio photograph: true-to-life textures, natural soft studio lighting, realistic shadows and depth of field, believable materials. Not illustrated, not 3D-cartoon, not flat.`;
 
+  // Subject preservation is stated first, and repeated at the end, because
+  // the model weights the opening and closing of a prompt most heavily.
+  const preserve = [
+    `RULE 1 - PRESERVE THE PERSON EXACTLY. Treat the ${SUBJ} in Image 1 as a photographic cut-out that must be carried over unchanged.`,
+    isPet
+      ? `Reproduce with NO alteration: the exact breed and body shape, the precise fur colour and every marking, the fur texture and length, the ear shape and set, the muzzle, the eye colour, and the expression. Do not swap the breed, change the coat colour, or tidy up the fur.`
+      : `Reproduce with NO alteration: their face and every facial feature, their exact facial expression, eyes, mouth, eyebrows, skin tone and skin texture, freckles, wrinkles and age, hair colour, hair length and hairstyle, body shape and proportions.`,
+    isPet
+      ? `Reproduce anything they are wearing EXACTLY: same sweater or bandana, same colour, same knit or pattern, plus any collar, tag, harness or bow. Do not restyle, recolour or replace it.`
+      : `Reproduce their clothing EXACTLY as worn: same garment, same colour, same fabric, same pattern, same length, same fit, plus any hat, headband, bow, glasses, jewellery, watch or shoes. Do not restyle, recolour, upgrade, tidy or replace any item of clothing.`,
+    `Keep their pose and posture as in the photo: the same stance, the same arm and hand positions, the same head tilt and the same direction of gaze.`,
+    `Do NOT beautify, slim, age, de-age, or make the ${SUBJ} look like a different one. If you cannot fit them perfectly, favour keeping the person accurate over composing a prettier scene.`,
+    `ONLY the background, the number prop, the lighting and the surrounding scene may be newly created.`
+  ].join(" ");
+
   const prompt = [
-    `You are given two images. Image 1 is a photo of a child. Image 2 shows the exact shape of a large numeral "${n}".`,
-    numberLine,
+    `You are given two images. Image 1 is a photograph of a real ${isPet ? "pet" : "person"} whose appearance must be preserved. Image 2 shows the exact shape of a large numeral "${n}".`,
+    preserve,
+    `RULE 2 - THE NUMBER. ${numberLine}`,
     `Create ONE photorealistic milestone birthday portrait built around this giant, freestanding, matte sculptural numeral "${n}".`,
     shapeText,
-    childPlacement,
-    `Keep the ${SUBJ_POS} face, skin tone, hair, features, outfit, and pose as close as possible to Image 1 - do not restyle the ${SUBJ} or change their clothes or pose.`,
+    isPet ? petPlacement : childPlacement,
     themeText,
     realism,
     "Do NOT render any text, letters, names, or numbers-as-text anywhere in the image.",
     extra ? `Extra direction: ${extra}` : "",
-    BRAND
+    BRAND,
+    `FINAL CHECK before you output: the ${SUBJ} must still look like the same real person from Image 1 - same face, same expression, same clothing, same pose. Only the scene around them has changed.`
   ].filter(Boolean).join("\n\n");
 
   const input = [
