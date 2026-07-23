@@ -53,7 +53,24 @@ const THEMES = {
   superhero: "A little-superhero theme: soft comic-burst accents, a generic cape, star shapes, and bold-but-soft red, blue, and cream balloons. Playful hero vibe using ONLY generic elements - no branded superheroes, suits, or logos.",
   nautical: "A nautical theme: soft sailboats, anchors, rope accents, and navy, white, and cream balloons. Fresh seaside vibe, clean and tasteful.",
   tropical: "A tropical luau theme: soft monstera and palm leaves, hibiscus flowers, pineapple accents, and green, coral, and cream balloons. Sunny, playful, island vibe.",
-  pumpkin: "A 'little pumpkin' autumn theme: soft pumpkins, wheat, warm fall foliage, and rust, cream, and sage balloons. Cozy harvest vibe, warm and gentle."
+  pumpkin: "A 'little pumpkin' autumn theme: soft pumpkins, wheat, warm fall foliage, and rust, cream, and sage balloons. Cozy harvest vibe, warm and gentle.",
+
+  /* ---- Sophisticated / modern (no balloons, adult & senior friendly) ---- */
+  studio_black: "A dramatic solid BLACK studio backdrop. The number is matte black or deep charcoal against it, defined by rim light and shadow alone. NO balloons, NO florals, NO party props. Moody, editorial, high-fashion. Strong directional lighting.",
+  studio_emerald: "A solid deep EMERALD GREEN studio backdrop with the number in matching emerald or soft ivory. NO balloons, NO party props. Rich jewel-tone, luxurious, editorial. Clean and grown-up.",
+  studio_burgundy: "A solid deep BURGUNDY / wine studio backdrop with the number in matching burgundy or cream. NO balloons, NO party props. Rich, moody, sophisticated, editorial.",
+  studio_navy: "A solid deep NAVY studio backdrop with the number in matching navy or ivory. NO balloons, NO party props. Sharp, modern, masculine-leaning and refined.",
+  studio_dusty_rose: "A solid DUSTY ROSE studio backdrop with the number in matching dusty rose or soft ivory. NO balloons, NO party props. Tonal, elegant, feminine and grown-up.",
+  studio_camel: "A solid warm CAMEL / caramel studio backdrop with the number in matching camel or cream. NO balloons, NO party props. Warm, minimal, editorial.",
+  gold_glam: "A glamorous champagne-and-gold scene: soft gold sequin or shimmer backdrop, warm metallic gold number, delicate sparkle and bokeh light. Optional slim gold drapery. NO childish balloons. Elegant, celebratory, grown-up glam.",
+  silver_glam: "A glamorous silver-and-crystal scene: shimmering silver or icy backdrop, polished silver-chrome number, crystal sparkle and soft bokeh. NO childish balloons. Sleek, luxe, modern glam.",
+  disco: "A retro-glam disco scene: mirror-ball light flecks scattered across the backdrop, a chrome or mirrored number, warm amber and silver sparkle. NO childish balloons. Fun but sophisticated, party-for-grown-ups.",
+  editorial_minimal: "A clean editorial studio scene: plain plaster or seamless backdrop in a single soft neutral, a matching matte number, and nothing else but beautiful directional window light and shadow. NO balloons, NO florals, NO props. Minimal, magazine-quality, very grown-up.",
+  concrete_industrial: "A modern industrial scene: raw concrete or microcement walls and floor, a matching concrete-grey number, hard directional light and strong shadow. NO balloons, NO florals. Architectural, masculine-leaning, urban and cool.",
+  monochrome_bw: "A striking black-and-white scene: white number against a deep charcoal or black backdrop (or reverse), rendered in a monochrome palette. NO balloons, NO colour. Timeless, graphic, high-contrast editorial.",
+  marble_luxe: "A luxe marble scene: soft white-and-grey veined marble backdrop and floor, an ivory or pale-gold number, slim gold accents and a single elegant floral stem. NO balloons. Refined, expensive, grown-up.",
+  golden_hour: "A warm golden-hour studio scene: sun-washed backdrop with long soft window-light shadows, a warm ivory or caramel number, and a hint of haze. NO balloons, NO party props. Cinematic, romantic, editorial.",
+  dark_floral: "A moody dark-floral scene: deep charcoal or forest backdrop with rich dark florals — burgundy roses, plum blooms, deep greenery — around an ivory or black number. NO balloons. Dramatic, romantic, very grown-up."
 };
 
 exports.handler = async (event) => {
@@ -214,6 +231,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
