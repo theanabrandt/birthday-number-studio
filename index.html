@@ -69,8 +69,10 @@
   .result .placeholder{color:var(--muted)}
   .result .placeholder .glyph{font-family:'Playfair Display',serif;font-size:60px;color:var(--line-2);line-height:1}
   .result img{width:100%;border-radius:13px;border:1px solid var(--line);box-shadow:var(--shadow)}
-  .actions{display:flex;gap:10px;width:100%;margin-top:14px}
-  .actions button{flex:1;border:1px solid var(--line-2);background:#fff;font-family:inherit;font-size:13px;font-weight:500;padding:11px;border-radius:10px;cursor:pointer;transition:.13s}
+  .upnote{font-size:11.5px;line-height:1.55;color:var(--muted);background:#f6f0e7;border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin:11px 0 0}
+  .upnote b{color:var(--ink);font-weight:600}
+  .actions{display:flex;flex-wrap:wrap;gap:9px;width:100%;margin-top:14px}
+  .actions button{flex:1 1 30%;min-width:120px;border:1px solid var(--line-2);background:#fff;font-family:inherit;font-size:12.5px;font-weight:500;padding:11px;border-radius:10px;cursor:pointer;transition:.13s}
   .actions button:hover{border-color:var(--clay)}
   .actions .dl{background:var(--clay);color:#fff;border-color:var(--clay)}
   .actions .dl:hover{background:var(--clay-deep)}
@@ -160,14 +162,19 @@
       </div>
       <div class="actions" id="actions" style="display:none">
         <button class="dl" id="dlBtn">Download</button>
+        <button id="upBtn">Upscale 2× for print</button>
         <button id="againBtn">Generate again</button>
       </div>
+      <p class="upnote" id="upnote" style="display:none">
+        <b>Download</b> gives you 1856&times;2304 &mdash; perfect for social and prints up to about 8&times;10.<br>
+        <b>Upscale 2&times;</b> saves a larger 3712&times;4608 file for 12&times;15 or 16&times;20 prints. It enlarges and smooths the image rather than adding new detail, so for wall art we recommend a final pass through Topaz or Evoto.
+      </p>
     </div>
   </div>
 
   <p class="foot">
     Portraits are AI-generated — the child, outfit, and scene are recreated, not copied, so slight changes from your original are expected. Generate again for a closer result.<br>
-    Generated images include an invisible SynthID watermark. For final client delivery, refine in your usual editor.
+    Portraits generate at about 1856&times;2304 &mdash; ideal for social and prints to roughly 8&times;10. Use &ldquo;Upscale 2&times;&rdquo; for larger prints, or refine in Topaz/Evoto for wall art. Images carry an invisible SynthID watermark.
   </p>
 </div>
 
@@ -177,7 +184,7 @@ const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
 const numsEl = $('nums');
-["1","2","3","4","5","6","7","8","9","10"].forEach((n,i)=>{
+["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21"].forEach((n,i)=>{
   const b=document.createElement('button');
   b.className='num'+(n==="1"?' on':''); b.textContent=n; b.dataset.n=n;
   b.onclick=()=>{ state.number=n; document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on',x.dataset.n===n)); $('placeholder').querySelector('.glyph').textContent=n; };
@@ -270,6 +277,44 @@ $('dlBtn').onclick=()=>{
   a.href=$('outImg').src; a.download=`number-${state.number}-${Date.now()}.png`; a.click();
 };
 
+/* ---- Upscale 2x for print (stepped bicubic in-browser) ----
+   Note: this enlarges and smooths — it does not invent new detail.
+   For maximum print quality, run the file through Topaz or Evoto. */
+$('upBtn').onclick=async ()=>{
+  const btn=$('upBtn'); const label=btn.textContent;
+  if(!$('outImg').src){ return; }
+  btn.disabled=true; btn.textContent='Upscaling…';
+  try{
+    const src=new Image();
+    await new Promise((res,rej)=>{ src.onload=res; src.onerror=rej; src.src=$('outImg').src; });
+    // stepped upscale: several small jumps look better than one big one
+    let cur=document.createElement('canvas');
+    cur.width=src.width; cur.height=src.height;
+    let cx=cur.getContext('2d');
+    cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality='high';
+    cx.drawImage(src,0,0);
+    const target=2.0; let scale=1;
+    while(scale < target){
+      const step=Math.min(1.35, target/scale);
+      const nw=Math.round(cur.width*step), nh=Math.round(cur.height*step);
+      const nxt=document.createElement('canvas'); nxt.width=nw; nxt.height=nh;
+      const nc=nxt.getContext('2d');
+      nc.imageSmoothingEnabled=true; nc.imageSmoothingQuality='high';
+      nc.drawImage(cur,0,0,nw,nh);
+      cur=nxt; scale*=step;
+    }
+    const url=cur.toDataURL('image/png');
+    const a=document.createElement('a');
+    a.download=`number-${state.number}-${cur.width}x${cur.height}-print.png`;
+    a.href=url; a.click();
+    btn.textContent=`Saved ${cur.width}×${cur.height}`;
+    setTimeout(()=>{ btn.textContent=label; btn.disabled=false; },2600);
+  }catch(e){
+    btn.textContent='Upscale failed';
+    setTimeout(()=>{ btn.textContent=label; btn.disabled=false; },2200);
+  }
+};
+
 async function callGenerateOnce(){
   const resp=await fetch('/.netlify/functions/generate',{
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -316,7 +361,7 @@ async function generate(){
   if(!state.img){ showErr("Please upload a photo first."); return; }
   hideErr();
   $('go').disabled=true;
-  $('placeholder').style.display='none'; $('outImg').style.display='none'; $('actions').style.display='none';
+  $('placeholder').style.display='none'; $('outImg').style.display='none'; $('actions').style.display='none'; $('upnote').style.display='none';
   $('loader').style.display='flex';
   let i=0; $('loadMsg').textContent=LOAD_MSGS[0];
   loadTimer=setInterval(()=>{ i=(i+1)%LOAD_MSGS.length; $('loadMsg').textContent=LOAD_MSGS[i]; },3500);
@@ -334,7 +379,7 @@ async function generate(){
       // else loop and regenerate
     }
     $('outImg').src=`data:${best.mimeType||'image/png'};base64,${best.image}`;
-    $('outImg').style.display='block'; $('actions').style.display='flex';
+    $('outImg').style.display='block'; $('actions').style.display='flex'; $('upnote').style.display='block';
   }catch(e){
     $('placeholder').style.display='block';
     showErr(e.message || 'Something went wrong. Please try again.');
@@ -350,7 +395,3 @@ function hideErr(){ $('err').style.display='none'; }
 </script>
 </body>
 </html>
-
-
-
-
