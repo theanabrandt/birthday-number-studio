@@ -103,6 +103,17 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body || "{}"); } catch { return json(400, cors, { error: "Bad request." }); }
 
+  // ---- Member access code -------------------------------------------------
+  // Set MEMBER_CODE in Netlify env vars. Change it any time to cut off a
+  // leaked link instantly. If it isn't set, the gate stays open.
+  const CODE = (process.env.MEMBER_CODE || "").trim();
+  if (CODE) {
+    const given = (body.code || "").toString().trim();
+    if (given.toLowerCase() !== CODE.toLowerCase()) {
+      return json(401, cors, { error: "That access code isn't right. Check the code inside your Studios menu." });
+    }
+  }
+
   // --- Validation mode: does the generated image clearly show numeral N? ---
   // Fail-open: any error returns matches:true so we never block a result.
   if (body.mode === "validate") {
@@ -307,6 +318,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
