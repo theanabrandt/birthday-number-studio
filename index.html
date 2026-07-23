@@ -45,6 +45,7 @@
 
   /* number picker */
   .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .custom-row{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
   .milestone-toggle{width:100%;margin-top:10px;display:flex;align-items:center;justify-content:space-between;
     border:1px dashed var(--line-2);background:transparent;border-radius:10px;padding:10px 14px;
     font-family:inherit;font-size:12.5px;color:var(--muted);cursor:pointer;transition:.13s}
@@ -123,6 +124,18 @@
           <span>Milestone birthdays — 25 to 80</span><span class="chev" id="mileChev">+</span>
         </button>
         <div class="nums" id="mileNums" style="display:none;margin-top:9px"></div>
+        <div class="custom-row">
+          <label class="fld" for="customNum" style="margin:0 0 6px">Or build your own number</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="customNum" inputmode="numeric" maxlength="3" placeholder="e.g. 33, 47, 100"
+                   style="flex:1;border:1px solid var(--line-2);border-radius:10px;background:#fff;
+                          font-family:inherit;font-size:14px;color:var(--ink);padding:10px 12px">
+            <button type="button" id="customBtn"
+                    style="border:1px solid var(--clay);background:var(--clay);color:#fff;font-family:inherit;
+                           font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;cursor:pointer">Use</button>
+          </div>
+          <p class="hint" id="customHint">Any number from 1 to 100.</p>
+        </div>
       </div>
 
       <div class="block">
@@ -196,12 +209,14 @@
 </div>
 
 <script>
-const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5" };
+const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5", customShell:null };
 const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
 function pickNumber(n){
   state.number=n;
+  state.customShell=null;
+  const ci=$('customNum'); if(ci) ci.value='';
   document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on',x.dataset.n===n));
   $('placeholder').querySelector('.glyph').textContent=n;
 }
@@ -215,7 +230,45 @@ function buildNums(containerId, list){
   });
 }
 buildNums('nums',["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21"]);
-buildNums('mileNums',["25","30","35","40","45","50","55","60","65","70","75","80"]);
+buildNums('mileNums',["25","30","35","40","45","50","55","60","65","70","75","80","85","90","95","100"]);
+
+/* ---- Custom number ----
+   Draws the numeral on a canvas so ANY number has a shape reference,
+   even ones we don't ship a tuned guide for. */
+function makeNumberRef(n){
+  const W=448,H=597;
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const x=cv.getContext('2d');
+  x.fillStyle='#f7f3ec'; x.fillRect(0,0,W,H);
+  const fam='"Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif';
+  let fs=320;
+  x.font='bold '+fs+'px '+fam;
+  while(x.measureText(n).width > W*0.84 && fs>60){
+    fs-=10; x.font='bold '+fs+'px '+fam;
+  }
+  x.fillStyle='#ffffff'; x.textAlign='center'; x.textBaseline='middle';
+  x.fillText(n, W/2, H/2);
+  return cv.toDataURL('image/jpeg',0.72).split(',')[1];
+}
+
+function applyCustomNumber(){
+  const raw=($('customNum').value||'').replace(/[^0-9]/g,'').slice(0,3);
+  const v=parseInt(raw,10);
+  if(!raw || isNaN(v) || v<1 || v>100){
+    $('customHint').textContent='Please enter a number between 1 and 100.';
+    $('customHint').style.color='var(--clay)';
+    return;
+  }
+  $('customNum').value=raw;
+  state.number=raw;
+  state.customShell = makeNumberRef(raw);
+  document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on', x.dataset.n===raw));
+  $('placeholder').querySelector('.glyph').textContent=raw;
+  $('customHint').textContent='Using the number '+raw+'.';
+  $('customHint').style.color='var(--muted)';
+}
+$('customBtn').onclick=applyCustomNumber;
+$('customNum').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); applyCustomNumber(); }});
 
 $('mileToggle').onclick=()=>{
   const box=$('mileNums'); const open = box.style.display!=='none';
@@ -384,6 +437,7 @@ async function callGenerateOnce(){
     body:JSON.stringify({
       number:state.number, theme:state.theme,
       shape:state.shape, cutout:state.cutout, ratio:state.ratio,
+      clientShell:state.customShell,
       details:$('details').value,
       imageBase64:state.img, mimeType:state.mime
     })
