@@ -1,7 +1,14 @@
 // Netlify Function: POST /.netlify/functions/generate
 const SHELLS = require("./shells.js"); // { arched:{1..10}, solid:{1..10} }
 
-const MODEL = "gemini-3.1-flash-image";
+// Each model has its OWN daily quota. If one is exhausted we fall through
+// to the next, so members keep generating instead of hitting a wall.
+const MODELS = [
+  { id: "gemini-3.1-flash-image",      size: "2K" },  // primary - best quality
+  { id: "gemini-3.1-flash-lite-image", size: "1K" },  // fastest / cheapest
+  { id: "gemini-2.5-flash-image",      size: "1K" },  // legacy fallback
+  { id: "gemini-3-pro-image",          size: "2K" }   // premium last resort
+];
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
 const BRAND = `
@@ -238,39 +245,59 @@ exports.handler = async (event) => {
   ];
   if (shellRef) input.push({ type: "image", mime_type: "image/jpeg", data: shellRef });
 
-  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: ratio, image_size: "2K" } };
-
+  let lastErr = "";
+  let quotaHit = false;
   try {
-    const resp = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "x-goog-api-key": KEY, "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const raw = data?.error?.message || "";
-      // Translate Google's quota/rate errors into something a member can understand
-      if (resp.status === 429 || /quota|rate limit|exceeded/i.test(raw)) {
-        const mins = (raw.match(/retry in (\d+)h(\d+)m/i) || [])[0];
-        return json(429, cors, {
-          error: "We've hit today's generation limit — the studio is busy! It resets tonight, so please try again later." +
-                 (mins ? " (" + mins + ")" : "")
-        });
+    for (const m of MODELS) {
+      const payload = {
+        model: m.id,
+        input,
+        response_format: { type: "image", aspect_ratio: ratio, image_size: m.size }
+      };
+      const resp = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "x-goog-api-key": KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = await resp.json().catch(() => ({}));
+
+      if (resp.ok) {
+        let b64 = data?.output_image?.data || null;
+        if (!b64 && Array.isArray(data?.steps)) {
+          for (const step of data.steps) {
+            const blocks = step.content || step.summary || [];
+            for (const c of blocks) if (c.type === "image" && c.data) b64 = c.data;
+          }
+        }
+        if (b64) return json(200, cors, { image: b64, mimeType: "image/png", model: m.id });
+        lastErr = "No image returned."; continue;   // try the next model
       }
+
+      const raw = data?.error?.message || "";
+      lastErr = raw || `Generation failed (${resp.status}).`;
+
+      // quota / rate limited on this model -> try the next one
+      if (resp.status === 429 || /quota|rate limit|exceeded|RESOURCE_EXHAUSTED/i.test(raw)) {
+        quotaHit = true; continue;
+      }
+      // model name not recognised -> skip it
+      if (resp.status === 404 || /not found|not supported|invalid model/i.test(raw)) continue;
+
+      // a real error (bad request, billing) -> stop and report
       if (resp.status === 400 && /billing|prepay|credit/i.test(raw)) {
         return json(402, cors, { error: "The studio is temporarily unavailable. Please try again shortly." });
       }
       return json(resp.status, cors, { error: raw || `Generation failed (${resp.status}).` });
     }
-    let b64 = data?.output_image?.data || null;
-    if (!b64 && Array.isArray(data?.steps)) {
-      for (const step of data.steps) {
-        const blocks = step.content || step.summary || [];
-        for (const c of blocks) if (c.type === "image" && c.data) b64 = c.data;
-      }
+
+    // every model was exhausted
+    if (quotaHit) {
+      return json(429, cors, {
+        error: "We've hit today's generation limit — the studio has been very busy! It resets tonight, so please try again later."
+      });
     }
-    if (!b64) return json(502, cors, { error: "No image came back - try again." });
-    return json(200, cors, { image: b64, mimeType: "image/png" });
+    return json(502, cors, { error: lastErr || "No image came back - try again." });
+
   } catch (e) {
     return json(500, cors, { error: "Something went wrong reaching the image service. Try again." });
   }
@@ -279,6 +306,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
