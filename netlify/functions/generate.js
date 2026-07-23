@@ -247,7 +247,21 @@ exports.handler = async (event) => {
       body: JSON.stringify(payload)
     });
     const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) return json(resp.status, cors, { error: data?.error?.message || `Generation failed (${resp.status}).` });
+    if (!resp.ok) {
+      const raw = data?.error?.message || "";
+      // Translate Google's quota/rate errors into something a member can understand
+      if (resp.status === 429 || /quota|rate limit|exceeded/i.test(raw)) {
+        const mins = (raw.match(/retry in (\d+)h(\d+)m/i) || [])[0];
+        return json(429, cors, {
+          error: "We've hit today's generation limit — the studio is busy! It resets tonight, so please try again later." +
+                 (mins ? " (" + mins + ")" : "")
+        });
+      }
+      if (resp.status === 400 && /billing|prepay|credit/i.test(raw)) {
+        return json(402, cors, { error: "The studio is temporarily unavailable. Please try again shortly." });
+      }
+      return json(resp.status, cors, { error: raw || `Generation failed (${resp.status}).` });
+    }
     let b64 = data?.output_image?.data || null;
     if (!b64 && Array.isArray(data?.steps)) {
       for (const step of data.steps) {
