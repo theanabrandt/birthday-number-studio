@@ -208,7 +208,7 @@
   </div>
 
   <p class="foot">
-    Portraits are AI-generated — the subject and scene are recreated, not copied, so slight changes from your original are expected. Generate again for a closer result.<br>
+    Portraits are AI-generated — the subject and scene are recreated, not copied, so slight changes are expected. We automatically check each one, but AI can still get hands and feet wrong. Give it a quick look before you share, and tap Generate again if anything looks off.<br>
     Portraits generate at about 1856&times;2304 &mdash; ideal for social and prints to roughly 8&times;10. Use &ldquo;Upscale 2&times;&rdquo; for larger prints, or refine in Topaz/Evoto for wall art. Images carry an invisible SynthID watermark.
   </p>
 </div>
@@ -503,7 +503,7 @@ async function generate(){
   try{
     let best=null;
     for(let attempt=1; attempt<=MAX_TRIES; attempt++){
-      if(attempt>1){ clearInterval(loadTimer); $('loadMsg').textContent='Getting the number just right…'; }
+      if(attempt>1){ clearInterval(loadTimer); $('loadMsg').textContent='Checking the details — one moment…'; }
       const data=await callGenerateOnce();
       best=data; // keep latest as fallback
       if(attempt===MAX_TRIES) break;          // last try — no point checking
