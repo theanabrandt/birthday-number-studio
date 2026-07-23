@@ -8,7 +8,7 @@ const BRAND = `
 Brand + quality rules (follow exactly):
 - Editorial, clean, soft directional window light. Textured plaster or seamless studio backdrop. Never busy or cluttered.
 - Do NOT render any words, captions, logos, or watermarks in the image. If a name is provided, it may appear once as refined thin script on the front face of the number, and nowhere else.
-- Photorealistic studio child-photography look. Natural depth of field. One child only.
+- Photorealistic studio portrait-photography look. Natural depth of field. One person only.
 `.trim();
 
 // Number finish (drives look; reference image drives the numeral identity)
@@ -137,13 +137,29 @@ exports.handler = async (event) => {
     "18":"seated in the lower loop of the 8",
     "19":"beside the round loop of the 9",
     "20":"framed by the round opening of the 0",
-    "21":"seated beside the 1, tucked against the curve of the 2"
+    "21":"seated beside the 1, tucked against the curve of the 2",
+    "25":"nestled into the lower rounded belly of the 5",
+    "30":"framed by the round opening of the 0",
+    "35":"nestled into the lower rounded belly of the 5",
+    "40":"framed by the round opening of the 0",
+    "45":"nestled into the lower rounded belly of the 5",
+    "50":"framed by the round opening of the 0",
+    "55":"nestled into the lower belly of the second 5",
+    "60":"framed by the round opening of the 0",
+    "65":"nestled into the lower rounded belly of the 5",
+    "70":"framed by the round opening of the 0",
+    "75":"nestled into the lower rounded belly of the 5",
+    "80":"framed by the round opening of the 0"
   };
   const seat = SEAT[n] || "beside the number";
+  // Subject wording adapts: babies/kids vs teens vs adult milestones
+  const age = parseInt(n,10);
+  const SUBJ = age <= 9 ? "child" : (age <= 21 ? "young person" : "person");
+  const SUBJ_POS = SUBJ + "'s";
 
   const childPlacement = isSolid
-    ? `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
-    : `CRITICAL - the child: take the child from Image 1 and place them WITH the number in its natural seat — specifically ${seat} — as the clear main focal point, large and prominent, so they look nestled into or perched on the number itself (not floating separately beside it). Keep their pose natural for that spot; if the photo shows them standing you may seat or perch them so they fit the number. Preserve their face, outfit, and general look.`;
+    ? `CRITICAL - the subject: take the ${SUBJ} from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
+    : `CRITICAL - the subject: take the ${SUBJ} from Image 1 and place them WITH the number in its natural seat — specifically ${seat} — as the clear main focal point, large and prominent, so they look nestled into or perched on the number itself (not floating separately beside it). Keep their pose natural for that spot; if the photo shows them standing you may seat or perch them so they fit the number. Preserve their face, outfit, and general look.`;
 
   const numberLine = isSolid
     ? `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
@@ -157,7 +173,7 @@ exports.handler = async (event) => {
     `Create ONE photorealistic milestone birthday portrait built around this giant, freestanding, matte sculptural numeral "${n}".`,
     shapeText,
     childPlacement,
-    `Keep the child's face, skin tone, hair, features, outfit, and pose as close as possible to Image 1 - do not restyle the child or change their clothes or pose.`,
+    `Keep the ${SUBJ_POS} face, skin tone, hair, features, outfit, and pose as close as possible to Image 1 - do not restyle the ${SUBJ} or change their clothes or pose.`,
     themeText,
     realism,
     "Do NOT render any text, letters, names, or numbers-as-text anywhere in the image.",
@@ -198,6 +214,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
