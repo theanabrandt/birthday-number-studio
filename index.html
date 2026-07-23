@@ -92,12 +92,30 @@
 </style>
 </head>
 <body>
+<div id="gate" style="position:fixed;inset:0;background:var(--cream);z-index:9999;display:none;
+     align-items:center;justify-content:center;padding:24px">
+  <div style="max-width:420px;width:100%;text-align:center">
+    <div class="eyebrow" style="margin-bottom:10px">The Studio Social System</div>
+    <h1 style="font-family:'Playfair Display',serif;font-weight:600;font-size:34px;margin:0 0 10px">Birthday Number Studio</h1>
+    <p style="color:var(--muted);font-size:14.5px;line-height:1.55;margin:0 0 22px">
+      This studio is for members. Enter the access code from your Studios menu to continue.
+    </p>
+    <input type="text" id="gateCode" placeholder="Access code" autocomplete="off"
+      style="width:100%;border:1px solid var(--line-2);border-radius:11px;background:#fff;font-family:inherit;
+             font-size:16px;color:var(--ink);padding:13px 15px;text-align:center;letter-spacing:.05em">
+    <button id="gateBtn" style="width:100%;margin-top:10px;border:0;background:var(--clay);color:#fff;
+      font-family:inherit;font-size:15px;font-weight:600;padding:14px;border-radius:11px;cursor:pointer">Enter studio</button>
+    <p id="gateErr" style="display:none;color:var(--clay);font-size:13px;margin:12px 0 0"></p>
+  </div>
+</div>
+
 <div class="wrap">
   <header>
     <div class="eyebrow">Birthday Number Studio</div>
     <h1>Number Studio</h1>
     <p class="sub">Upload a photo, choose the age and vibe, and generate a birthday portrait with the little one nestled inside the number.</p>
     <p class="disclaimer">✨ These portraits are created by AI. We do our best to keep the person, outfit and pose exactly as in your photo, but because the image is generated some details will still shift. Tap "Generate again" for another version.</p>
+    <p id="usageNote" style="font-size:12.5px;color:var(--muted);margin:14px 0 0"></p>
     <div class="frame"></div>
   </header>
 
@@ -214,6 +232,56 @@
 </div>
 
 <script>
+/* ---------- Member access + monthly allowance ---------- */
+const LS_CODE='bns_code', LS_USE='bns_usage';
+const MONTHLY_LIMIT = 150;
+
+function monthKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1); }
+function getUsage(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(LS_USE)||'{}');
+    if(raw.m!==monthKey()) return {m:monthKey(), n:0};
+    return raw;
+  }catch(e){ return {m:monthKey(), n:0}; }
+}
+function bumpUsage(){
+  const u=getUsage(); u.n=(u.n||0)+1;
+  try{ localStorage.setItem(LS_USE, JSON.stringify(u)); }catch(e){}
+  paintUsage();
+}
+function paintUsage(){
+  const el=document.getElementById('usageNote'); if(!el) return;
+  const u=getUsage(); const left=Math.max(0, MONTHLY_LIMIT-(u.n||0));
+  el.textContent = left+' of '+MONTHLY_LIMIT+' portraits left this month';
+  el.style.color = left<=15 ? 'var(--clay)' : 'var(--muted)';
+}
+function memberCode(){ try{ return localStorage.getItem(LS_CODE)||''; }catch(e){ return ''; } }
+
+function showGate(msg){
+  const g=document.getElementById('gate');
+  g.style.display='flex';
+  if(msg){ const e=document.getElementById('gateErr'); e.textContent=msg; e.style.display='block'; }
+}
+function hideGate(){ document.getElementById('gate').style.display='none'; }
+
+document.getElementById('gateBtn').onclick=()=>{
+  const v=(document.getElementById('gateCode').value||'').trim();
+  if(!v){ return; }
+  try{ localStorage.setItem(LS_CODE, v); }catch(e){}
+  hideGate(); paintUsage();
+};
+document.getElementById('gateCode').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); document.getElementById('gateBtn').click(); }
+});
+
+// A code in the link (?k=CODE) lets the Studios tile pass it through silently
+(function(){
+  const k=new URLSearchParams(location.search).get('k');
+  if(k){ try{ localStorage.setItem(LS_CODE,k.trim()); }catch(e){}
+         history.replaceState({},'',location.pathname); }
+  if(!memberCode()) showGate();
+})();
+
 const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5", customShell:null, subject:"person" };
 const $ = id => document.getElementById(id);
 
@@ -453,7 +521,7 @@ async function callGenerateOnce(){
     body:JSON.stringify({
       number:state.number, theme:state.theme,
       shape:state.shape, cutout:state.cutout, ratio:state.ratio,
-      clientShell:state.customShell, subject:state.subject,
+      clientShell:state.customShell, subject:state.subject, code:memberCode(),
       details:$('details').value,
       imageBase64:state.img, mimeType:state.mime
     })
@@ -492,6 +560,12 @@ async function checkNumber(smallB64){
 
 async function generate(){
   if(!state.img){ showErr("Please upload a photo first."); return; }
+  if(!memberCode()){ showGate(); return; }
+  const u=getUsage();
+  if((u.n||0) >= MONTHLY_LIMIT){
+    showErr("You've used all "+MONTHLY_LIMIT+" portraits for this month. Your allowance refreshes on the 1st.");
+    return;
+  }
   hideErr();
   $('go').disabled=true;
   $('placeholder').style.display='none'; $('outImg').style.display='none'; $('actions').style.display='none'; $('upnote').style.display='none';
@@ -512,10 +586,12 @@ async function generate(){
       if(ok) break;             // number looks right — done
       // else loop and regenerate
     }
+    bumpUsage();
     $('outImg').src=`data:${best.mimeType||'image/png'};base64,${best.image}`;
     $('outImg').style.display='block'; $('actions').style.display='flex'; $('upnote').style.display='block';
   }catch(e){
     $('placeholder').style.display='block';
+    if(/access code/i.test(e.message||'')){ try{ localStorage.removeItem(LS_CODE); }catch(_){} showGate(e.message); }
     showErr(e.message || 'Something went wrong. Please try again.');
   }finally{
     clearInterval(loadTimer);
