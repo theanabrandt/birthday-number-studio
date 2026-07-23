@@ -126,7 +126,18 @@ exports.handler = async (event) => {
     "7":"leaning into the open angle beneath the 7's top bar",
     "8":"seated in the lower loop of the 8",
     "9":"sitting on the tail/lower stem of the 9, beside its round loop",
-    "10":"beside the 1 and 0, framed by the opening of the 0"
+    "10":"beside the 1 and 0, framed by the opening of the 0",
+    "11":"seated between the two 1s",
+    "12":"sitting on the flat bottom bar of the 2, beside the 1",
+    "13":"nestled into the lower rounded curve of the 3",
+    "14":"seated in the open triangular gap of the 4",
+    "15":"nestled into the lower rounded belly of the 5",
+    "16":"sitting inside the round lower loop of the 6",
+    "17":"leaning into the open angle beneath the 7's top bar",
+    "18":"seated in the lower loop of the 8",
+    "19":"beside the round loop of the 9",
+    "20":"framed by the round opening of the 0",
+    "21":"seated beside the 1, tucked against the curve of the 2"
   };
   const seat = SEAT[n] || "beside the number";
 
@@ -160,7 +171,7 @@ exports.handler = async (event) => {
   ];
   if (shellRef) input.push({ type: "image", mime_type: "image/jpeg", data: shellRef });
 
-  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: ratio, image_size: "1K" } };
+  const payload = { model: MODEL, input, response_format: { type: "image", aspect_ratio: ratio, image_size: "2K" } };
 
   try {
     const resp = await fetch(ENDPOINT, {
@@ -187,6 +198,7 @@ exports.handler = async (event) => {
 function json(statusCode, headers, obj) {
   return { statusCode, headers: { ...headers, "Content-Type": "application/json" }, body: JSON.stringify(obj) };
 }
+
 
 
 
