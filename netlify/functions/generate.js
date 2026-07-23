@@ -117,7 +117,7 @@ exports.handler = async (event) => {
           body: JSON.stringify({
             contents: [{
               parts: [
-                { text: `Look at this image. Is the large sculptural birthday-number prop clearly and unmistakably the digit "${vn}" (readable as the number ${vn})? Reply with exactly one word: YES or NO.` },
+                { text: `Check this image for TWO things. (1) Is the large sculptural birthday-number prop clearly and unmistakably the digit "${vn}"? (2) Is the anatomy of the person or animal correct - exactly two arms, two legs, two feet, five fingers per hand, no extra, duplicated, merged or missing limbs, hands or feet? If BOTH are correct reply with exactly: YES. If EITHER is wrong reply with exactly: NO.` },
                 { inline_data: { mime_type: body.mimeType || "image/jpeg", data: body.image } }
               ]
             }]
@@ -221,7 +221,8 @@ exports.handler = async (event) => {
       : `Reproduce their clothing EXACTLY as worn: same garment, same colour, same fabric, same pattern, same length, same fit, plus any hat, headband, bow, glasses, jewellery, watch or shoes. Do not restyle, recolour, upgrade, tidy or replace any item of clothing.`,
     `Keep their pose and posture as in the photo: the same stance, the same arm and hand positions, the same head tilt and the same direction of gaze.`,
     `Do NOT beautify, slim, age, de-age, or make the ${SUBJ} look like a different one. If you cannot fit them perfectly, favour keeping the person accurate over composing a prettier scene.`,
-    `ONLY the background, the number prop, the lighting and the surrounding scene may be newly created.`
+    `ONLY the background, the number prop, the lighting and the surrounding scene may be newly created.`,
+    `ANATOMY MUST BE CORRECT. Exactly one head, two arms, two hands with five fingers each, two legs and two feet. No extra, duplicated, merged, floating or missing limbs, hands, fingers or feet. If the pose partly hides a limb, keep it hidden rather than inventing an extra one. Check the hands and feet carefully before you output.`
   ].join(" ");
 
   const prompt = [
@@ -236,7 +237,7 @@ exports.handler = async (event) => {
     "Do NOT render any text, letters, names, or numbers-as-text anywhere in the image.",
     extra ? `Extra direction: ${extra}` : "",
     BRAND,
-    `FINAL CHECK before you output: the ${SUBJ} must still look like the same real person from Image 1 - same face, same expression, same clothing, same pose. Only the scene around them has changed.`
+    `FINAL CHECK before you output: (a) the ${SUBJ} must still look like the same real one from Image 1 - same face, same expression, same clothing, same pose; (b) count the limbs - two arms, two legs, two feet, five fingers per hand, nothing extra or missing. Only the scene around them has changed.`
   ].filter(Boolean).join("\n\n");
 
   const input = [
