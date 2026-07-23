@@ -115,9 +115,24 @@ exports.handler = async (event) => {
   const RATIOS = ["4:5","2:3","1:1","9:16","3:2","3:4","4:3","5:4","16:9"];
   const ratio = RATIOS.includes(body.ratio) ? body.ratio : "4:5";
 
+  // Natural "seat" spot for each numeral when placing the child WITH the number.
+  const SEAT = {
+    "1":"inside the tall arched opening of the 1",
+    "2":"sitting on the flat bottom bar of the 2, tucked into its curve like a little bench",
+    "3":"nestled into the lower rounded curve of the 3",
+    "4":"seated on the crossbar of the 4, in its open triangular gap",
+    "5":"nestled into the lower rounded belly of the 5",
+    "6":"sitting inside the round lower loop of the 6",
+    "7":"leaning into the open angle beneath the 7's top bar",
+    "8":"seated in the lower loop of the 8",
+    "9":"sitting on the tail/lower stem of the 9, beside its round loop",
+    "10":"beside the 1 and 0, framed by the opening of the 0"
+  };
+  const seat = SEAT[n] || "beside the number";
+
   const childPlacement = isSolid
-    ? `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if they are standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
-    : `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — standing stays standing, sitting stays sitting; preserve their posture, stance, arms, and legs. Position them at the number's arched cutout opening as the clear main focal point, large and prominent, WITHOUT changing their pose.`;
+    ? `CRITICAL - the child: take the child from Image 1 and KEEP THEIR ORIGINAL POSE exactly as in the photo — if standing, keep them standing; if sitting, keep them sitting; preserve their posture, stance, arms, and legs. Place them directly in front of / beside the solid number as the clear main focal point, large and prominent, WITHOUT changing their pose. The number is a solid numeral with no interior cutout.`
+    : `CRITICAL - the child: take the child from Image 1 and place them WITH the number in its natural seat — specifically ${seat} — as the clear main focal point, large and prominent, so they look nestled into or perched on the number itself (not floating separately beside it). Keep their pose natural for that spot; if the photo shows them standing you may seat or perch them so they fit the number. Preserve their face, outfit, and general look.`;
 
   const numberLine = isSolid
     ? `THE SINGLE MOST IMPORTANT REQUIREMENT: the giant prop MUST clearly and unmistakably read as the numeral "${n}". Match the exact shape, proportions, curves, and orientation of the numeral shown in Image 2. It is the number ${n} — not a letter, not an arch, not a mirror, not an abstract shape. Make it a SOLID numeral (no interior window). If in doubt, copy the silhouette in Image 2 precisely. Render it as a real, dimensional, matte sculptural prop standing on the floor, about the full height of the frame.`
