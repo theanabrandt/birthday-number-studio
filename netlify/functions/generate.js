@@ -123,12 +123,16 @@ exports.handler = async (event) => {
   const { number, theme, shape, cutout, details, imageBase64, mimeType } = body;
   if (!imageBase64) return json(400, cors, { error: "Please upload a child photo first." });
 
-  const n = String(number || "1").replace(/[^0-9]/g, "").slice(0, 2) || "1";
+  const n = String(number || "1").replace(/[^0-9]/g, "").slice(0, 3) || "1";
   const themeText = THEMES[theme] || THEMES.neutral;
   const shapeText = SHAPES[shape] || SHAPES.rounded;
   const isSolid = cutout === "solid";
   const extra = (details || "").toString().slice(0, 400).trim();
-  const shellRef = (isSolid ? SHELLS.solid : SHELLS.arched)[n];
+  // Prefer the tuned reference we ship; otherwise use the shape the browser drew
+  const serverRef = (isSolid ? SHELLS.solid : SHELLS.arched)[n];
+  const clientRef = typeof body.clientShell === "string" && body.clientShell.length > 100
+    ? body.clientShell : null;
+  const shellRef = serverRef || clientRef;
   const RATIOS = ["4:5","2:3","1:1","9:16","3:2","3:4","4:3","5:4","16:9"];
   const ratio = RATIOS.includes(body.ratio) ? body.ratio : "4:5";
 
