@@ -114,7 +114,7 @@
     <div class="eyebrow">Birthday Number Studio</div>
     <h1>Number Studio</h1>
     <p class="sub">Upload a photo, choose the age and vibe, and generate a birthday portrait with the little one nestled inside the number.</p>
-    <p class="disclaimer">✨ These portraits are created by AI. We do our best to keep the person, outfit and pose exactly as in your photo, but because the image is generated some details will still shift. Tap "Generate again" for another version.</p>
+    <p class="disclaimer">✨ These portraits are created by AI. We do our best to keep the person, outfit and pose exactly as in your photo, but because the image is generated some details will still shift. Tap “Generate again” for another version.<br><br><b>Your allowance:</b> membership includes <b>150 portraits a month</b> — easily a full session’s worth of options, and it refreshes on the 1st. Only finished portraits count, so retries are on us.</p>
     <p id="usageNote" style="font-size:12.5px;color:var(--muted);margin:14px 0 0"></p>
     <div class="frame"></div>
   </header>
@@ -251,8 +251,18 @@ function bumpUsage(){
 }
 function paintUsage(){
   const el=document.getElementById('usageNote'); if(!el) return;
-  const u=getUsage(); const left=Math.max(0, MONTHLY_LIMIT-(u.n||0));
-  el.textContent = left+' of '+MONTHLY_LIMIT+' portraits left this month';
+  const u=getUsage(); const used=u.n||0; const left=Math.max(0, MONTHLY_LIMIT-used);
+  let msg;
+  if(left===0){
+    msg = 'You\u2019ve used all '+MONTHLY_LIMIT+' portraits this month \u2014 your allowance refreshes on the 1st.';
+  } else if(left<=15){
+    msg = left+' portrait'+(left===1?'':'s')+' left this month \u00b7 refreshes on the 1st';
+  } else if(used===0){
+    msg = 'Your membership includes '+MONTHLY_LIMIT+' portraits a month \u2728';
+  } else {
+    msg = used+' of '+MONTHLY_LIMIT+' portraits used this month \u00b7 refreshes on the 1st';
+  }
+  el.textContent = msg;
   el.style.color = left<=15 ? 'var(--clay)' : 'var(--muted)';
 }
 function memberCode(){ try{ return localStorage.getItem(LS_CODE)||''; }catch(e){ return ''; } }
@@ -563,7 +573,7 @@ async function generate(){
   if(!memberCode()){ showGate(); return; }
   const u=getUsage();
   if((u.n||0) >= MONTHLY_LIMIT){
-    showErr("You've used all "+MONTHLY_LIMIT+" portraits for this month. Your allowance refreshes on the 1st.");
+    showErr("You've used all "+MONTHLY_LIMIT+" portraits this month \u2014 nicely done! Your allowance refreshes on the 1st.");
     return;
   }
   hideErr();
