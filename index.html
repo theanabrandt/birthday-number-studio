@@ -45,6 +45,11 @@
 
   /* number picker */
   .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .milestone-toggle{width:100%;margin-top:10px;display:flex;align-items:center;justify-content:space-between;
+    border:1px dashed var(--line-2);background:transparent;border-radius:10px;padding:10px 14px;
+    font-family:inherit;font-size:12.5px;color:var(--muted);cursor:pointer;transition:.13s}
+  .milestone-toggle:hover{border-color:var(--clay);color:var(--clay)}
+  .milestone-toggle .chev{font-size:15px;font-weight:600;line-height:1}
   .num{aspect-ratio:1;border:1px solid var(--line-2);background:#fff;border-radius:11px;font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);cursor:pointer;transition:.13s}
   .num:hover{border-color:var(--clay)}
   .num.on{background:var(--clay);color:#fff;border-color:var(--clay)}
@@ -114,6 +119,10 @@
       <div class="block">
         <p class="step"><b>2</b> Which birthday?</p>
         <div class="nums" id="nums"></div>
+        <button class="milestone-toggle" id="mileToggle" type="button">
+          <span>Milestone birthdays — 25 to 80</span><span class="chev" id="mileChev">+</span>
+        </button>
+        <div class="nums" id="mileNums" style="display:none;margin-top:9px"></div>
       </div>
 
       <div class="block">
@@ -183,13 +192,28 @@ const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:
 const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
-const numsEl = $('nums');
-["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21"].forEach((n,i)=>{
-  const b=document.createElement('button');
-  b.className='num'+(n==="1"?' on':''); b.textContent=n; b.dataset.n=n;
-  b.onclick=()=>{ state.number=n; document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on',x.dataset.n===n)); $('placeholder').querySelector('.glyph').textContent=n; };
-  numsEl.appendChild(b);
-});
+function pickNumber(n){
+  state.number=n;
+  document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on',x.dataset.n===n));
+  $('placeholder').querySelector('.glyph').textContent=n;
+}
+function buildNums(containerId, list){
+  const el=$(containerId);
+  list.forEach(n=>{
+    const b=document.createElement('button');
+    b.className='num'+(n==="1"?' on':''); b.textContent=n; b.dataset.n=n;
+    b.onclick=()=>pickNumber(n);
+    el.appendChild(b);
+  });
+}
+buildNums('nums',["1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21"]);
+buildNums('mileNums',["25","30","35","40","45","50","55","60","65","70","75","80"]);
+
+$('mileToggle').onclick=()=>{
+  const box=$('mileNums'); const open = box.style.display!=='none';
+  box.style.display = open ? 'none' : 'grid';
+  $('mileChev').textContent = open ? '+' : '\u2212';
+};
 
 /* ---- chip pickers (scoped per group) ---- */
 function buildChips(containerId, items, stateKey){
