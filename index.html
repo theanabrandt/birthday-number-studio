@@ -97,7 +97,7 @@
     <div class="eyebrow">Birthday Number Studio</div>
     <h1>Number Studio</h1>
     <p class="sub">Upload a photo, choose the age and vibe, and generate a birthday portrait with the little one nestled inside the number.</p>
-    <p class="disclaimer">✨ These portraits are created by AI. The result is a brand-new generated image inspired by your photo — the child will look similar, but details like the outfit, pose, and exact likeness will change. Tap "Generate again" for more options.</p>
+    <p class="disclaimer">✨ These portraits are created by AI. We do our best to keep the person, outfit and pose exactly as in your photo, but because the image is generated some details will still shift. Tap "Generate again" for another version.</p>
     <div class="frame"></div>
   </header>
 
@@ -105,10 +105,11 @@
     <!-- LEFT: inputs -->
     <div class="card">
       <div class="block">
-        <p class="step"><b>1</b> Upload the child's photo</p>
+        <p class="step"><b>1</b> Add photo</p>
+        <div class="chips" id="subjChips" style="margin-bottom:11px"></div>
         <div class="drop" id="drop">
           <div class="big">Tap to choose a photo</div>
-          <p>A clear, well-lit face works best · JPG or PNG</p>
+          <p>A clear, well-lit photo works best · JPG or PNG</p>
         </div>
         <div class="preview" id="preview" style="display:none">
           <img id="previewImg" alt="uploaded">
@@ -145,6 +146,10 @@
           <span>Modern &amp; sophisticated — for seniors &amp; adults</span><span class="chev" id="sophChev">+</span>
         </button>
         <div class="chips" id="sophChips" style="display:none;margin-top:9px"></div>
+        <button class="milestone-toggle" id="petToggle" type="button">
+          <span>Pet themes</span><span class="chev" id="petChev">+</span>
+        </button>
+        <div class="chips" id="petChips" style="display:none;margin-top:9px"></div>
         <button class="milestone-toggle" id="partyToggle" type="button">
           <span>Kids&rsquo; party themes</span><span class="chev" id="partyChev">+</span>
         </button>
@@ -203,13 +208,13 @@
   </div>
 
   <p class="foot">
-    Portraits are AI-generated — the child, outfit, and scene are recreated, not copied, so slight changes from your original are expected. Generate again for a closer result.<br>
+    Portraits are AI-generated — the subject and scene are recreated, not copied, so slight changes from your original are expected. Generate again for a closer result.<br>
     Portraits generate at about 1856&times;2304 &mdash; ideal for social and prints to roughly 8&times;10. Use &ldquo;Upscale 2&times;&rdquo; for larger prints, or refine in Topaz/Evoto for wall art. Images carry an invisible SynthID watermark.
   </p>
 </div>
 
 <script>
-const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5", customShell:null };
+const state = { img:null, mime:"image/jpeg", number:"1", theme:"neutral", shape:"rounded", cutout:"solid", ratio:"4:5", customShell:null, subject:"person" };
 const $ = id => document.getElementById(id);
 
 /* ---- number picker ---- */
@@ -335,13 +340,24 @@ function wireToggle(btnId, boxId, chevId){
     $(chevId).textContent = open ? '+' : '\u2212';
   };
 }
+buildChips('petChips',[
+  ["pet_house","Cozy Pet House"],["pet_holiday","Holiday Pet"],
+  ["pet_party","Pet Party"],["pet_cozy","Fireside"],
+  ["pet_meadow","Meadow"],["pet_studio","Clean Studio"]
+],'theme');
+
 wireToggle('sophToggle','sophChips','sophChev');
+wireToggle('petToggle','petChips','petChev');
 wireToggle('partyToggle','partyChips','partyChev');
 
 buildChips('shapes',[
   ["rounded","Rounded"],["sharp","Sharp Modern"],
   ["chunky","Chunky"],["thin","Thin & Elegant"]
 ],'shape');
+
+buildChips('subjChips',[
+  ["person","Person"],["pet","Pet"]
+],'subject');
 
 buildChips('cutouts',[
   ["solid","Beside the number"],["arched","Inside the number"]
@@ -437,7 +453,7 @@ async function callGenerateOnce(){
     body:JSON.stringify({
       number:state.number, theme:state.theme,
       shape:state.shape, cutout:state.cutout, ratio:state.ratio,
-      clientShell:state.customShell,
+      clientShell:state.customShell, subject:state.subject,
       details:$('details').value,
       imageBase64:state.img, mimeType:state.mime
     })
