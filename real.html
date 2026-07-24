@@ -134,6 +134,8 @@
         <div class="ctrl"><label>Rotation <span class="val" id="rotVal">0°</span></label><input type="range" id="rot" min="-25" max="25" value="0"></div>
         <div class="ctrl"><label>Opacity <span class="val" id="opVal">100%</span></label><input type="range" id="op" min="20" max="100" value="100"></div>
         <div class="ctrl"><label>Soft shadow <span class="val" id="shVal">35%</span></label><input type="range" id="sh" min="0" max="100" value="35"></div>
+        <div class="ctrl" id="depthCtrl"><label>Depth <span class="val" id="dpVal">45%</span></label><input type="range" id="dp" min="0" max="100" value="45"></div>
+        <div class="ctrl" id="lightCtrl"><label>Light direction <span class="val" id="ltVal">135°</span></label><input type="range" id="lt" min="0" max="359" value="135"></div>
         <p class="hint" style="font-size:11.5px;color:var(--muted);margin:2px 0 0">Drag the number on the preview to move it.</p>
       </div>
     </div>
@@ -171,10 +173,12 @@ const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 
 const STYLES = {
-  solid:   { label:'Solid' },
+  prop:    { label:'3D prop',  depth:true },
+  bevel:   { label:'Bevelled', depth:true },
+  solid:   { label:'Flat' },
+  shadowed:{ label:'Raised' },
   outline: { label:'Outline' },
-  soft:    { label:'Soft fill' },
-  shadowed:{ label:'Raised' }
+  soft:    { label:'Soft fill' }
 };
 const FONTS = {
   playfair: { label:'Elegant',   css:'700 {S}px "Playfair Display", Georgia, serif',      scale:1.00 },
@@ -188,9 +192,20 @@ const FONTS = {
 const COLORS = ['#FFFFFF','#FBF8F2','#EDE6DA','#D8CCB8','#B06A4A','#2A241E','#8FA394','#C9A227','#B9BDC2'];
 
 const state = {
-  img:null, number:'1', style:'solid', color:'#FFFFFF', font:'playfair',
+  img:null, number:'1', style:'prop', color:'#FFFFFF', font:'playfair', depth:0.45, light:135,
   x:0.72, y:0.55, size:0.55, rot:0, opacity:1, shadow:0.35
 };
+
+/* ---- colour helpers for 3D shading ---- */
+function hexToRgb(h){
+  h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+}
+function shade(hex, mult){
+  const [r,g,b]=hexToRgb(hex);
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*mult)));
+  return 'rgb('+f(r)+','+f(g)+','+f(b)+')';
+}
 
 /* ---- pickers ---- */
 const numsEl=$('nums');
@@ -227,8 +242,8 @@ Object.entries(FONTS).forEach(([k,v],i)=>{
 const stylesEl=$('styles');
 Object.entries(STYLES).forEach(([k,v],i)=>{
   const c=document.createElement('button');
-  c.className='chip'+(i===0?' on':''); c.textContent=v.label; c.dataset.k=k;
-  c.onclick=()=>{ state.style=k; stylesEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); draw(); };
+  c.className='chip'+(k===state.style?' on':''); c.textContent=v.label; c.dataset.k=k;
+  c.onclick=()=>{ state.style=k; stylesEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); syncDepthCtrls(); draw(); };
   stylesEl.appendChild(c);
 });
 
@@ -300,14 +315,49 @@ function draw(){
     ctx.shadowOffsetY=base*0.012*state.shadow;
   }
   const n=state.number;
-  if(state.style==='outline'){
+  const st=state.style;
+
+  if(st==='prop' || st==='bevel'){
+    // light comes FROM this angle, so the solid side falls opposite it
+    const a=(state.light+180)*Math.PI/180;
+    const dx=Math.cos(a), dy=Math.sin(a);
+    const depthPx = base*0.055*state.depth*(st==='bevel'?0.35:1);
+    const steps = Math.max(8, Math.round(depthPx*1.4));
+
+    // extruded side, darkest at the back
+    ctx.shadowColor = state.shadow>0 ? 'rgba(30,22,15,'+(0.5*state.shadow)+')' : 'transparent';
+    for(let i=steps;i>=1;i--){
+      const t=i/steps;
+      ctx.fillStyle = shade(state.color, 0.52 + 0.26*(1-t));
+      ctx.fillText(n, dx*depthPx*t, dy*depthPx*t);
+      if(i===steps) ctx.shadowColor='transparent';   // shadow only from the back face
+    }
+    // front face, with a soft gradient so it reads as a real surface
+    const fw = ctx.measureText(n).width;
+    const g = ctx.createLinearGradient(-fw/2, -fs*0.5, fw/2, fs*0.5);
+    g.addColorStop(0, shade(state.color, 1.0));
+    g.addColorStop(1, shade(state.color, 0.90));
+    ctx.fillStyle = g;
+    ctx.fillText(n,0,0);
+
+    // catch-light along the lit edge
+    if(st==='bevel'){
+      ctx.save();
+      ctx.globalAlpha = state.opacity*0.5;
+      ctx.lineWidth = Math.max(1, base*0.0035);
+      ctx.strokeStyle = shade(state.color, 1.35);
+      ctx.translate(-dx*depthPx*0.35, -dy*depthPx*0.35);
+      ctx.strokeText(n,0,0);
+      ctx.restore();
+    }
+  } else if(st==='outline'){
     ctx.lineWidth=Math.max(2, base*0.006);
     ctx.strokeStyle=state.color;
     ctx.strokeText(n,0,0);
-  } else if(state.style==='soft'){
+  } else if(st==='soft'){
     ctx.globalAlpha=state.opacity*0.72;
     ctx.fillStyle=state.color; ctx.fillText(n,0,0);
-  } else if(state.style==='shadowed'){
+  } else if(st==='shadowed'){
     ctx.fillStyle='rgba(30,22,15,0.18)';
     ctx.fillText(n, base*0.012, base*0.014);
     ctx.shadowColor='transparent';
@@ -342,8 +392,18 @@ bind('sz',v=>state.size=v/100,v=>v+'%');
 bind('rot',v=>state.rot=v,v=>v+'°');
 bind('op',v=>state.opacity=v/100,v=>v+'%');
 bind('sh',v=>state.shadow=v/100,v=>v+'%');
+bind('dp',v=>state.depth=v/100,v=>v+'%');
+bind('lt',v=>state.light=v,v=>v+'\u00b0');
+
+function syncDepthCtrls(){
+  const show = !!(STYLES[state.style]||{}).depth;
+  $('depthCtrl').style.display = show ? 'block':'none';
+  $('lightCtrl').style.display = show ? 'block':'none';
+}
 
 /* ---- actions ---- */
+syncDepthCtrls();
+
 $('centerBtn').onclick=()=>{ state.x=0.5; state.y=0.5; draw(); };
 $('resetBtn').onclick=()=>{
   state.img=null; cv.style.display='none'; $('empty').style.display='block';
