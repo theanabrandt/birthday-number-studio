@@ -109,31 +109,7 @@
       </div>
 
       <div class="block">
-        <p class="step"><b>2</b> Build a set</p>
-        <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;cursor:pointer">
-          <input type="checkbox" id="cutoutChk" style="width:17px;height:17px;accent-color:var(--clay);cursor:pointer">
-          Lift my subject off their backdrop
-        </label>
-        <p class="hint" style="font-size:11.5px;color:var(--muted);margin:6px 0 0">
-          Works best on a clean seamless backdrop. Your subject stays exactly as photographed.</p>
-        <div id="setCtrls" style="display:none;margin-top:12px">
-          <div class="ctrl"><label>Backdrop sensitivity <span class="val" id="tolVal">38</span></label><input type="range" id="tol" min="8" max="110" value="38"></div>
-          <div class="ctrl"><label>Edge softness <span class="val" id="edVal">2</span></label><input type="range" id="ed" min="0" max="8" value="2"></div>
-          <div class="ctrl"><label>Grounding shadow <span class="val" id="grVal">35%</span></label><input type="range" id="gr" min="0" max="100" value="35"></div>
-          <p class="step" style="margin:14px 0 8px"><b>·</b> New backdrop</p>
-          <div class="swatches" id="bdSwatches"></div>
-          <label style="display:flex;align-items:center;gap:9px;font-size:13px;margin-top:11px;cursor:pointer">
-            <input type="checkbox" id="behindChk" checked style="width:17px;height:17px;accent-color:var(--clay);cursor:pointer">
-            Number sits behind them
-          </label>
-          <button type="button" id="bdUploadBtn" style="width:100%;margin-top:10px;border:1px solid var(--line-2);
-            background:#fff;font-family:inherit;font-size:12.5px;padding:9px;border-radius:9px;cursor:pointer">Use my own backdrop image</button>
-          <input type="file" id="bdFile" accept="image/*">
-        </div>
-      </div>
-
-      <div class="block">
-        <p class="step"><b>3</b> Number</p>
+        <p class="step"><b>2</b> Number</p>
         <div class="nums" id="nums"></div>
         <div class="customrow">
           <input type="text" id="customNum" inputmode="numeric" maxlength="3" placeholder="Any number">
@@ -142,12 +118,12 @@
       </div>
 
       <div class="block">
-        <p class="step"><b>4</b> Font</p>
+        <p class="step"><b>3</b> Font</p>
         <div class="chips" id="fonts"></div>
       </div>
 
       <div class="block">
-        <p class="step"><b>5</b> Style</p>
+        <p class="step"><b>4</b> Style</p>
         <div class="chips" id="styles"></div>
         <div style="margin-top:11px" class="swatches" id="swatches"></div>
         <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
@@ -165,7 +141,7 @@
       </div>
 
       <div class="block">
-        <p class="step"><b>6</b> Size &amp; feel</p>
+        <p class="step"><b>5</b> Size &amp; feel</p>
         <div class="ctrl"><label>Size <span class="val" id="szVal">55%</span></label><input type="range" id="sz" min="10" max="130" value="55"></div>
         <div class="ctrl"><label>Rotation <span class="val" id="rotVal">0°</span></label><input type="range" id="rot" min="-25" max="25" value="0"></div>
         <div class="ctrl"><label>Opacity <span class="val" id="opVal">100%</span></label><input type="range" id="op" min="20" max="100" value="100"></div>
@@ -247,7 +223,6 @@ const COLORS = ['#FFFFFF','#FBF8F2','#EDE6DA','#D8CCB8','#B06A4A','#2A241E','#8F
 
 const state = {
   img:null, number:'1', style:'balloons', color:'#FFFFFF', font:'playfair', depth:0.45, light:135, balloonSet:'whitesilver', balloonSize:0.5, frameW:0.22, word:'',
-  cutout:false, tol:38, edge:2, backdrop:'#EDE6DA', behind:true, ground:0.35,
   x:0.72, y:0.55, size:0.55, rot:0, opacity:1, shadow:0.35
 };
 
@@ -259,8 +234,6 @@ const BALLOON_SETS = {
   monochrome: { label:'Charcoal',       cols:['#E9E9EA','#C9C9CB','#9B9B9E','#6E6E71','#44444A'] }
 };
 let balloonSeed = 20260724;
-const BACKDROPS=['#EDE6DA','#FBF8F2','#FFFFFF','#D8CCB8','#C9CBCE','#8FA394','#B06A4A','#2F3A44','#2A241E'];
-let cutCanvas=null, bdImage=null;
 
 /* ---- colour helpers for 3D shading ---- */
 function hexToRgb(h){
@@ -358,46 +331,6 @@ function sampleAt(e){
   cv.style.cursor='grab';
 }
 
-/* ---- lift the subject off their backdrop ---- */
-function buildCutout(){
-  if(!state.img){ cutCanvas=null; return; }
-  const W=cv.width, H=cv.height;
-  const src=document.createElement('canvas'); src.width=W; src.height=H;
-  const sx=src.getContext('2d',{willReadFrequently:true});
-  sx.drawImage(state.img,0,0,W,H);
-  const d=sx.getImageData(0,0,W,H), px=d.data;
-
-  // sample the backdrop from the border
-  let r=0,g=0,b=0,n=0;
-  const take=(x,y)=>{ const i=(y*W+x)*4; r+=px[i]; g+=px[i+1]; b+=px[i+2]; n++; };
-  for(let x=0;x<W;x+=Math.max(1,Math.floor(W/120))){ take(x,0); take(x,H-1); }
-  for(let y=0;y<H;y+=Math.max(1,Math.floor(H/120))){ take(0,y); take(W-1,y); }
-  r/=n; g/=n; b/=n;
-
-  const tol=state.tol;
-  for(let i=0;i<px.length;i+=4){
-    const dr=px[i]-r, dg=px[i+1]-g, db=px[i+2]-b;
-    const dist=Math.sqrt(dr*dr+dg*dg+db*db);
-    px[i+3] = dist<tol ? 0 : Math.min(255, (dist-tol)*6);
-  }
-  const out=document.createElement('canvas'); out.width=W; out.height=H;
-  const ox=out.getContext('2d');
-  ox.putImageData(d,0,0);
-
-  if(state.edge>0){                       // soften the cut edge
-    const soft=document.createElement('canvas'); soft.width=W; soft.height=H;
-    const s2=soft.getContext('2d');
-    s2.filter='blur('+state.edge+'px)';
-    s2.drawImage(out,0,0);
-    cutCanvas=soft;
-  } else cutCanvas=out;
-}
-let cutTimer=null;
-function scheduleCutout(){
-  clearTimeout(cutTimer);
-  cutTimer=setTimeout(()=>{ buildCutout(); draw(); }, 120);
-}
-
 /* ---- upload ---- */
 $('drop').onclick=()=>$('file').click();
 ['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('hot')}));
@@ -418,7 +351,6 @@ function loadFile(f){
       cv.style.display='block';
       $('actions').style.display='flex';
       $('note').style.display='block';
-      if(state.cutout) buildCutout();
       draw();
       if(document.fonts && document.fonts.ready){ document.fonts.ready.then(draw); }
     };
@@ -441,18 +373,7 @@ function draw(){
   if(!state.img) return;
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
-  if(state.cutout && cutCanvas){
-    if(bdImage){
-      const ar=bdImage.width/bdImage.height, car=W/H;
-      let dw=W, dh=H;
-      if(ar>car){ dh=H; dw=H*ar; } else { dw=W; dh=W/ar; }
-      ctx.drawImage(bdImage,(W-dw)/2,(H-dh)/2,dw,dh);
-    } else {
-      ctx.fillStyle=state.backdrop; ctx.fillRect(0,0,W,H);
-    }
-  } else {
-    ctx.drawImage(state.img,0,0,W,H);        // the real photo, untouched
-  }
+  ctx.drawImage(state.img,0,0,W,H);          // the real photo, untouched
 
   const base=Math.min(W,H);
   const fs=base*state.size*1.6;
@@ -488,7 +409,6 @@ function draw(){
     ctx.globalAlpha = state.opacity;
     ctx.drawImage(layer,0,0);
     ctx.globalAlpha = 1;
-    placeSubject();
     return;
   }
 
@@ -499,7 +419,6 @@ function draw(){
     ctx.globalAlpha = state.opacity;
     ctx.drawImage(layer,0,0);
     ctx.globalAlpha = 1;
-    placeSubject();
     return;
   }
 
@@ -558,21 +477,6 @@ function draw(){
   ctx.globalAlpha = state.opacity;
   ctx.drawImage(layer,0,0);
   ctx.globalAlpha = 1;
-  placeSubject();
-}
-
-function placeSubject(){
-  if(!(state.cutout && cutCanvas && state.behind)) return;
-  const W=cv.width, H=cv.height;
-  if(state.ground>0){                       // grounding shadow so they sit in the scene
-    ctx.save();
-    ctx.globalAlpha=0.55*state.ground;
-    ctx.filter='blur('+Math.max(4,Math.min(W,H)*0.012)+'px)';
-    ctx.globalCompositeOperation='multiply';
-    ctx.drawImage(cutCanvas, 0, Math.min(W,H)*0.012);
-    ctx.restore();
-  }
-  ctx.drawImage(cutCanvas,0,0);
 }
 
 /* ---- balloon-filled marquee number ---- */
@@ -833,32 +737,6 @@ function syncDepthCtrls(){
 
 /* ---- actions ---- */
 syncDepthCtrls();
-
-$('cutoutChk').onchange=e=>{
-  state.cutout=e.target.checked;
-  $('setCtrls').style.display = state.cutout ? 'block':'none';
-  if(state.cutout) scheduleCutout(); else draw();
-};
-$('behindChk').onchange=e=>{ state.behind=e.target.checked; draw(); };
-bind('tol',v=>{state.tol=v; scheduleCutout();},v=>v);
-bind('ed', v=>{state.edge=v; scheduleCutout();},v=>v);
-bind('gr', v=>state.ground=v/100,v=>v+'%');
-
-const bdEl=$('bdSwatches');
-BACKDROPS.forEach((col,i)=>{
-  const b2=document.createElement('button');
-  b2.className='sw'+(i===0?' on':''); b2.style.background=col; b2.dataset.c=col;
-  b2.onclick=()=>{ state.backdrop=col; bdImage=null;
-    bdEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===col)); draw(); };
-  bdEl.appendChild(b2);
-});
-$('bdUploadBtn').onclick=()=>$('bdFile').click();
-$('bdFile').onchange=e=>{
-  const f=e.target.files[0]; if(!f) return;
-  const rd=new FileReader();
-  rd.onload=()=>{ const im=new Image(); im.onload=()=>{ bdImage=im; draw(); }; im.src=rd.result; };
-  rd.readAsDataURL(f);
-};
 
 $('centerBtn').onclick=()=>{ state.x=0.5; state.y=0.5; draw(); };
 $('resetBtn').onclick=()=>{
