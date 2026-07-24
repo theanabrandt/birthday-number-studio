@@ -146,6 +146,12 @@
         <div class="ctrl"><label>Rotation <span class="val" id="rotVal">0°</span></label><input type="range" id="rot" min="-25" max="25" value="0"></div>
         <div class="ctrl"><label>Opacity <span class="val" id="opVal">100%</span></label><input type="range" id="op" min="20" max="100" value="100"></div>
         <div class="ctrl"><label>Soft shadow <span class="val" id="shVal">35%</span></label><input type="range" id="sh" min="0" max="100" value="35"></div>
+        <div id="balloonCtrls">
+          <div class="ctrl"><label>Balloon size <span class="val" id="bsVal">50%</span></label><input type="range" id="bs" min="20" max="100" value="50"></div>
+          <div class="chips" id="balloonSets" style="margin-bottom:12px"></div>
+          <button type="button" id="shuffleBtn" style="width:100%;border:1px solid var(--line-2);background:#fff;
+            font-family:inherit;font-size:12.5px;padding:9px;border-radius:9px;cursor:pointer;margin-bottom:12px">Shuffle balloons</button>
+        </div>
         <div class="ctrl" id="depthCtrl"><label>Depth <span class="val" id="dpVal">45%</span></label><input type="range" id="dp" min="0" max="100" value="45"></div>
         <div class="ctrl" id="lightCtrl"><label>Light direction <span class="val" id="ltVal">135°</span></label><input type="range" id="lt" min="0" max="359" value="135"></div>
         <p class="hint" style="font-size:11.5px;color:var(--muted);margin:2px 0 0">Drag the number on the preview to move it.</p>
@@ -185,6 +191,7 @@ const $ = id => document.getElementById(id);
 const cv = $('cv'); let ctx = cv.getContext('2d');
 
 const STYLES = {
+  balloons:{ label:'Balloon box', balloons:true },
   prop:    { label:'3D prop',  depth:true },
   bevel:   { label:'Bevelled', depth:true },
   solid:   { label:'Flat' },
@@ -204,9 +211,18 @@ const FONTS = {
 const COLORS = ['#FFFFFF','#FBF8F2','#EDE6DA','#D8CCB8','#B06A4A','#2A241E','#8FA394','#C9A227','#B9BDC2'];
 
 const state = {
-  img:null, number:'1', style:'prop', color:'#FFFFFF', font:'playfair', depth:0.45, light:135,
+  img:null, number:'1', style:'balloons', color:'#FFFFFF', font:'playfair', depth:0.45, light:135, balloonSet:'whitesilver', balloonSize:0.5,
   x:0.72, y:0.55, size:0.55, rot:0, opacity:1, shadow:0.35
 };
+
+const BALLOON_SETS = {
+  whitesilver:{ label:'White & silver', cols:['#FFFFFF','#F4F4F5','#E7E7E9','#C9CBCE','#AFB3B7'] },
+  creampearl: { label:'Cream & pearl',  cols:['#FBF8F2','#F3ECE0','#E8DCC9','#D9C9AE','#C8B79A'] },
+  blushgold:  { label:'Blush & gold',   cols:['#F7E4E1','#EFC9C4','#E3AFA8','#D9BC7A','#C9A227'] },
+  sage:       { label:'Sage',           cols:['#EDF1EA','#DCE5D6','#C3D2BB','#A8BC9F','#8FA394'] },
+  monochrome: { label:'Charcoal',       cols:['#E9E9EA','#C9C9CB','#9B9B9E','#6E6E71','#44444A'] }
+};
+let balloonSeed = 20260724;
 
 /* ---- colour helpers for 3D shading ---- */
 function hexToRgb(h){
@@ -374,6 +390,17 @@ function draw(){
   const n=state.number;
   const st=state.style;
 
+  if(st==='balloons'){
+    ctx.restore();                 // balloon renderer positions itself
+    drawBalloonNumber(n, fs, base);
+    ctx = ctxSaved;
+    ctx.globalAlpha = state.opacity;
+    ctx.drawImage(layer,0,0);
+    ctx.globalAlpha = 1;
+    return;
+  }
+
+
   if(st==='prop' || st==='bevel'){
     // light comes FROM this angle, so the solid side falls opposite it
     const a=(state.light+180)*Math.PI/180;
@@ -430,6 +457,100 @@ function draw(){
   ctx.globalAlpha = 1;
 }
 
+/* ---- balloon-filled marquee number ---- */
+function rng(seed){ let x=seed>>>0; return ()=>{ x=(x*1664525+1013904223)>>>0; return x/4294967296; }; }
+
+function glyphCanvas(n, fontStr, W, H, tx, ty, rot, erode){
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d');
+  g.font=fontStr; g.textAlign='center'; g.textBaseline='middle';
+  g.translate(tx,ty); g.rotate(rot);
+  g.fillStyle='#000'; g.fillText(n,0,0);
+  if(erode>0){                       // pull the edge inward to leave a frame
+    g.globalCompositeOperation='destination-out';
+    g.lineJoin='round'; g.lineWidth=erode*2; g.strokeStyle='#000';
+    g.strokeText(n,0,0);
+    g.globalCompositeOperation='source-over';
+  }
+  return c;
+}
+
+function drawBalloonNumber(n, fs, base){
+  const W=cv.width, H=cv.height;
+  const tx=state.x*W, ty=state.y*H, rot=state.rot*Math.PI/180;
+  const fontStr=ctx.font;
+  const frame=Math.max(2, fs*0.045);
+
+  const full   = glyphCanvas(n,fontStr,W,H,tx,ty,rot,0);
+  const inner  = glyphCanvas(n,fontStr,W,H,tx,ty,rot,frame);
+
+  // --- balloons on their own layer, then masked to the interior ---
+  const bc=document.createElement('canvas'); bc.width=W; bc.height=H;
+  const b=bc.getContext('2d');
+  const im=inner.getContext('2d').getImageData(0,0,W,H).data;
+  const insideAt=(x,y)=>{
+    const ix=Math.round(x), iy=Math.round(y);
+    if(ix<0||iy<0||ix>=W||iy>=H) return false;
+    return im[(iy*W+ix)*4+3] > 128;
+  };
+  const cols=(BALLOON_SETS[state.balloonSet]||BALLOON_SETS.whitesilver).cols;
+  const rand=rng(balloonSeed);
+  const rMax=fs*0.13*state.balloonSize + fs*0.025;
+  const rMin=rMax*0.38;
+  const placed=[]; let tries=0;
+  while(placed.length<140 && tries<9000){
+    tries++;
+    const x=rand()*W, y=rand()*H;
+    if(!insideAt(x,y)) continue;
+    const r=rMin+rand()*(rMax-rMin);
+    let ok=true;
+    for(const p2 of placed){
+      if(Math.hypot(p2.x-x,p2.y-y) < (p2.r+r)*0.78){ ok=false; break; }
+    }
+    if(!ok) continue;
+    placed.push({x,y,r,c:cols[Math.floor(rand()*cols.length)]});
+  }
+  placed.sort((p,q)=>q.r-p.r);
+  for(const p2 of placed){
+    const g=b.createRadialGradient(p2.x-p2.r*0.35,p2.y-p2.r*0.42,p2.r*0.08,p2.x,p2.y,p2.r);
+    g.addColorStop(0, shade(p2.c,1.10));
+    g.addColorStop(0.62, p2.c);
+    g.addColorStop(1, shade(p2.c,0.80));
+    b.fillStyle=g; b.beginPath(); b.arc(p2.x,p2.y,p2.r,0,7); b.fill();
+    b.strokeStyle=shade(p2.c,0.86); b.lineWidth=Math.max(1,p2.r*0.05); b.stroke();
+    b.globalAlpha=0.55; b.fillStyle='#fff';
+    b.beginPath(); b.ellipse(p2.x-p2.r*0.34,p2.y-p2.r*0.4,p2.r*0.22,p2.r*0.14,-0.6,0,7); b.fill();
+    b.globalAlpha=1;
+  }
+  b.globalCompositeOperation='destination-in';
+  b.drawImage(inner,0,0);
+
+  // --- frame ring = full glyph minus interior ---
+  const rc=document.createElement('canvas'); rc.width=W; rc.height=H;
+  const r2=rc.getContext('2d');
+  r2.drawImage(full,0,0);
+  r2.globalCompositeOperation='source-in';
+  r2.fillStyle=state.color; r2.fillRect(0,0,W,H);
+  r2.globalCompositeOperation='destination-out';
+  r2.drawImage(inner,0,0);
+
+  // --- compose: soft shadow, interior wash, balloons, then frame ---
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  if(state.shadow>0){
+    ctx.save();
+    ctx.shadowColor='rgba(30,22,15,'+(0.55*state.shadow)+')';
+    ctx.shadowBlur=base*0.05*state.shadow;
+    ctx.shadowOffsetY=base*0.014*state.shadow;
+    ctx.drawImage(full,0,0);
+    ctx.restore();
+  }
+  ctx.globalAlpha=0.9; ctx.drawImage(inner,0,0); ctx.globalAlpha=1;  // recessed interior
+  ctx.drawImage(bc,0,0);
+  ctx.drawImage(rc,0,0);
+  ctx.restore();
+}
+
 /* ---- drag to position ---- */
 let dragging=false,last=null;
 function pt(e){
@@ -456,11 +577,22 @@ bind('op',v=>state.opacity=v/100,v=>v+'%');
 bind('sh',v=>state.shadow=v/100,v=>v+'%');
 bind('dp',v=>state.depth=v/100,v=>v+'%');
 bind('lt',v=>state.light=v,v=>v+'\u00b0');
+bind('bs',v=>state.balloonSize=v/100,v=>v+'%');
+
+const bsetEl=$('balloonSets');
+Object.entries(BALLOON_SETS).forEach(([k,v],i)=>{
+  const c=document.createElement('button');
+  c.className='chip'+(k===state.balloonSet?' on':''); c.textContent=v.label; c.dataset.k=k;
+  c.onclick=()=>{ state.balloonSet=k; bsetEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); draw(); };
+  bsetEl.appendChild(c);
+});
+$('shuffleBtn').onclick=()=>{ balloonSeed=Math.floor(Math.random()*4294967296); draw(); };
 
 function syncDepthCtrls(){
-  const show = !!(STYLES[state.style]||{}).depth;
-  $('depthCtrl').style.display = show ? 'block':'none';
-  $('lightCtrl').style.display = show ? 'block':'none';
+  const cfg = STYLES[state.style]||{};
+  $('depthCtrl').style.display = cfg.depth ? 'block':'none';
+  $('lightCtrl').style.display = cfg.depth ? 'block':'none';
+  $('balloonCtrls').style.display = cfg.balloons ? 'block':'none';
 }
 
 /* ---- actions ---- */
