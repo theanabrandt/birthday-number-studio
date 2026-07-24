@@ -6,7 +6,7 @@
 <title>Real Number Studio · The Studio Social System</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Bebas+Neue&family=Abril+Fatface&family=Great+Vibes&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --cream:#FBF8F2; --clay:#B06A4A; --clay-deep:#9c5c40; --ink:#2A241E;
@@ -118,13 +118,18 @@
       </div>
 
       <div class="block">
-        <p class="step"><b>3</b> Style</p>
+        <p class="step"><b>3</b> Font</p>
+        <div class="chips" id="fonts"></div>
+      </div>
+
+      <div class="block">
+        <p class="step"><b>4</b> Style</p>
         <div class="chips" id="styles"></div>
         <div style="margin-top:11px" class="swatches" id="swatches"></div>
       </div>
 
       <div class="block">
-        <p class="step"><b>4</b> Size &amp; feel</p>
+        <p class="step"><b>5</b> Size &amp; feel</p>
         <div class="ctrl"><label>Size <span class="val" id="szVal">55%</span></label><input type="range" id="sz" min="10" max="130" value="55"></div>
         <div class="ctrl"><label>Rotation <span class="val" id="rotVal">0°</span></label><input type="range" id="rot" min="-25" max="25" value="0"></div>
         <div class="ctrl"><label>Opacity <span class="val" id="opVal">100%</span></label><input type="range" id="op" min="20" max="100" value="100"></div>
@@ -171,10 +176,19 @@ const STYLES = {
   soft:    { label:'Soft fill' },
   shadowed:{ label:'Raised' }
 };
+const FONTS = {
+  playfair: { label:'Elegant',   css:'700 {S}px "Playfair Display", Georgia, serif',      scale:1.00 },
+  cormorant:{ label:'Refined',   css:'600 {S}px "Cormorant Garamond", Georgia, serif',    scale:1.14 },
+  dmsans:   { label:'Modern',    css:'700 {S}px "DM Sans", Helvetica, Arial, sans-serif', scale:0.94 },
+  poppins:  { label:'Rounded',   css:'800 {S}px "Poppins", Helvetica, Arial, sans-serif', scale:0.92 },
+  bebas:    { label:'Poster',    css:'400 {S}px "Bebas Neue", Impact, sans-serif',        scale:1.22 },
+  abril:    { label:'Statement', css:'400 {S}px "Abril Fatface", Georgia, serif',         scale:0.98 },
+  vibes:    { label:'Script',    css:'400 {S}px "Great Vibes", cursive',                  scale:1.30 }
+};
 const COLORS = ['#FFFFFF','#FBF8F2','#EDE6DA','#D8CCB8','#B06A4A','#2A241E','#8FA394','#C9A227','#B9BDC2'];
 
 const state = {
-  img:null, number:'1', style:'solid', color:'#FFFFFF',
+  img:null, number:'1', style:'solid', color:'#FFFFFF', font:'playfair',
   x:0.72, y:0.55, size:0.55, rot:0, opacity:1, shadow:0.35
 };
 
@@ -199,6 +213,16 @@ $('customBtn').onclick=()=>{
   document.querySelectorAll('.num').forEach(x=>x.classList.remove('on'));
 };
 $('customNum').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();$('customBtn').click();} });
+
+const fontsEl=$('fonts');
+Object.entries(FONTS).forEach(([k,v],i)=>{
+  const c=document.createElement('button');
+  c.className='chip'+(i===0?' on':''); c.textContent=v.label; c.dataset.k=k;
+  // preview each option in its own face
+  c.style.fontFamily = v.css.replace(/^[^ ]+ \{S\}px /,'');
+  c.onclick=()=>{ state.font=k; fontsEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); draw(); };
+  fontsEl.appendChild(c);
+});
 
 const stylesEl=$('styles');
 Object.entries(STYLES).forEach(([k,v],i)=>{
@@ -237,6 +261,7 @@ function loadFile(f){
       $('actions').style.display='flex';
       $('note').style.display='block';
       draw();
+      if(document.fonts && document.fonts.ready){ document.fonts.ready.then(draw); }
     };
     im.src=r.result;
   };
@@ -266,7 +291,8 @@ function draw(){
   ctx.rotate(state.rot*Math.PI/180);
   ctx.globalAlpha=state.opacity;
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.font='700 '+fs+'px "Playfair Display", Georgia, serif';
+  const F=FONTS[state.font]||FONTS.playfair;
+  ctx.font=F.css.replace('{S}', String(fs*F.scale));
 
   if(state.shadow>0){
     ctx.shadowColor='rgba(30,22,15,'+(0.55*state.shadow)+')';
