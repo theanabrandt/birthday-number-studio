@@ -218,6 +218,12 @@
         <button id="upBtn">Upscale 2× for print</button>
         <button id="againBtn">Generate again</button>
       </div>
+      <div id="historyWrap" style="display:none;margin-top:16px">
+        <p style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px">
+          This session</p>
+        <div id="historyStrip" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px"></div>
+        <p class="hint" style="margin-top:6px">Tap any to bring it back. Downloads are yours to keep &mdash; this list clears when you close the page.</p>
+      </div>
       <p class="upnote" id="upnote" style="display:none">
         <b>Download</b> gives you 1856&times;2304 &mdash; perfect for social and prints up to about 8&times;10.<br>
         <b>Upscale 2&times;</b> saves a larger 3712&times;4608 file for 12&times;15 or 16&times;20 prints. It enlarges and smooths the image rather than adding new detail, so for wall art we recommend a final pass through Topaz or Evoto.
@@ -232,6 +238,44 @@
 </div>
 
 <script>
+/* ---------- Session history ---------- */
+const HISTORY=[]; const HISTORY_MAX=8;
+function addToHistory(dataUrl, meta){
+  HISTORY.unshift({url:dataUrl, meta:meta});
+  if(HISTORY.length>HISTORY_MAX) HISTORY.length=HISTORY_MAX;
+  paintHistory();
+}
+function paintHistory(){
+  const wrap=$('historyWrap'), strip=$('historyStrip');
+  if(!wrap||!strip) return;
+  if(!HISTORY.length){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  strip.innerHTML='';
+  HISTORY.forEach((item,i)=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.title=item.meta||'';
+    b.style.cssText='flex:0 0 auto;width:62px;height:78px;border-radius:9px;overflow:hidden;'+
+      'border:'+(i===0?'2px solid var(--clay)':'1px solid var(--line-2)')+';'+
+      'padding:0;cursor:pointer;background:#fff';
+    const im=document.createElement('img');
+    im.src=item.url; im.alt=item.meta||'portrait';
+    im.style.cssText='width:100%;height:100%;object-fit:cover;display:block';
+    b.appendChild(im);
+    b.onclick=()=>{
+      $('outImg').src=item.url;
+      $('outImg').style.display='block';
+      $('placeholder').style.display='none';
+      $('actions').style.display='flex';
+      $('upnote').style.display='block';
+      strip.querySelectorAll('button').forEach((x,j)=>{
+        x.style.border = (j===i) ? '2px solid var(--clay)' : '1px solid var(--line-2)';
+      });
+    };
+    strip.appendChild(b);
+  });
+}
+
 /* ---------- Member access + monthly allowance ---------- */
 const LS_CODE='bns_code', LS_USE='bns_usage';
 const MONTHLY_LIMIT = 150;
@@ -597,7 +641,9 @@ async function generate(){
       // else loop and regenerate
     }
     bumpUsage();
-    $('outImg').src=`data:${best.mimeType||'image/png'};base64,${best.image}`;
+    const finalUrl=`data:${best.mimeType||'image/png'};base64,${best.image}`;
+    addToHistory(finalUrl, 'Number '+state.number+' \u00b7 '+state.theme.replace(/_/g,' '));
+    $('outImg').src=finalUrl;
     $('outImg').style.display='block'; $('actions').style.display='flex'; $('upnote').style.display='block';
   }catch(e){
     $('placeholder').style.display='block';
