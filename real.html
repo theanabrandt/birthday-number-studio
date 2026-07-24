@@ -126,6 +126,18 @@
         <p class="step"><b>4</b> Style</p>
         <div class="chips" id="styles"></div>
         <div style="margin-top:11px" class="swatches" id="swatches"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
+          <input type="color" id="customColor" value="#FFFFFF"
+                 style="width:44px;height:34px;padding:0;border:1px solid var(--line-2);border-radius:8px;background:#fff;cursor:pointer">
+          <input type="text" id="hexInput" maxlength="7" placeholder="#FFFFFF" spellcheck="false"
+                 style="flex:1;border:1px solid var(--line-2);border-radius:8px;background:#fff;font-family:inherit;
+                        font-size:13px;color:var(--ink);padding:8px 11px;text-transform:uppercase">
+          <button type="button" id="pickFromPhoto" title="Sample a colour from your photo"
+                  style="border:1px solid var(--line-2);background:#fff;font-family:inherit;font-size:12px;
+                         padding:8px 12px;border-radius:8px;cursor:pointer;white-space:nowrap">Pick from photo</button>
+        </div>
+        <p class="hint" id="pickHint" style="font-size:11.5px;color:var(--muted);margin:7px 0 0;display:none">
+          Tap anywhere on the preview to lift that colour.</p>
       </div>
 
       <div class="block">
@@ -170,7 +182,7 @@
 
 <script>
 const $ = id => document.getElementById(id);
-const cv = $('cv'), ctx = cv.getContext('2d');
+const cv = $('cv'); let ctx = cv.getContext('2d');
 
 const STYLES = {
   prop:    { label:'3D prop',  depth:true },
@@ -251,9 +263,46 @@ const swEl=$('swatches');
 COLORS.forEach((col,i)=>{
   const s=document.createElement('button');
   s.className='sw'+(i===0?' on':''); s.style.background=col; s.dataset.c=col;
-  s.onclick=()=>{ state.color=col; swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===col)); draw(); };
+  s.onclick=()=>setColor(col,true);
   swEl.appendChild(s);
 });
+
+function setColor(hex, fromSwatch){
+  hex=(hex||'').trim();
+  if(!/^#?[0-9a-fA-F]{6}$/.test(hex)) return;
+  if(hex[0]!=='#') hex='#'+hex;
+  state.color=hex.toUpperCase();
+  $('customColor').value=state.color;
+  $('hexInput').value=state.color;
+  swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on', x.dataset.c.toUpperCase()===state.color));
+  draw();
+}
+$('customColor').oninput=e=>setColor(e.target.value);
+$('hexInput').oninput=e=>{ if(/^#?[0-9a-fA-F]{6}$/.test(e.target.value.trim())) setColor(e.target.value); };
+
+/* sample a colour straight from the photograph */
+let picking=false;
+$('pickFromPhoto').onclick=()=>{
+  if(!state.img) return;
+  picking=!picking;
+  $('pickHint').style.display = picking ? 'block':'none';
+  $('pickFromPhoto').style.borderColor = picking ? 'var(--clay)':'var(--line-2)';
+  $('pickFromPhoto').style.color = picking ? 'var(--clay)':'var(--ink)';
+  cv.style.cursor = picking ? 'crosshair':'grab';
+};
+function sampleAt(e){
+  const r=cv.getBoundingClientRect();
+  const px=Math.round(((e.touches?e.touches[0].clientX:e.clientX)-r.left)/r.width*cv.width);
+  const py=Math.round(((e.touches?e.touches[0].clientY:e.clientY)-r.top)/r.height*cv.height);
+  const d=ctx.getImageData(Math.max(0,Math.min(cv.width-1,px)), Math.max(0,Math.min(cv.height-1,py)), 1,1).data;
+  const hex='#'+[d[0],d[1],d[2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+  setColor(hex);
+  picking=false;
+  $('pickHint').style.display='none';
+  $('pickFromPhoto').style.borderColor='var(--line-2)';
+  $('pickFromPhoto').style.color='var(--ink)';
+  cv.style.cursor='grab';
+}
 
 /* ---- upload ---- */
 $('drop').onclick=()=>$('file').click();
@@ -301,10 +350,18 @@ function draw(){
 
   const base=Math.min(W,H);
   const fs=base*state.size*1.6;
+
+  // The number is composed on its own layer at full opacity, then blended in
+  // once — otherwise the 24 extrusion passes stack and muddy at low opacity.
+  const layer=document.createElement('canvas');
+  layer.width=W; layer.height=H;
+  const lx=layer.getContext('2d');
+  const mainCtx=ctx, ctxSaved=ctx;
+  ctx=lx;
+
   ctx.save();
   ctx.translate(state.x*W, state.y*H);
   ctx.rotate(state.rot*Math.PI/180);
-  ctx.globalAlpha=state.opacity;
   ctx.textAlign='center'; ctx.textBaseline='middle';
   const F=FONTS[state.font]||FONTS.playfair;
   ctx.font=F.css.replace('{S}', String(fs*F.scale));
@@ -343,7 +400,7 @@ function draw(){
     // catch-light along the lit edge
     if(st==='bevel'){
       ctx.save();
-      ctx.globalAlpha = state.opacity*0.5;
+      ctx.globalAlpha = 0.5;
       ctx.lineWidth = Math.max(1, base*0.0035);
       ctx.strokeStyle = shade(state.color, 1.35);
       ctx.translate(-dx*depthPx*0.35, -dy*depthPx*0.35);
@@ -355,7 +412,7 @@ function draw(){
     ctx.strokeStyle=state.color;
     ctx.strokeText(n,0,0);
   } else if(st==='soft'){
-    ctx.globalAlpha=state.opacity*0.72;
+    ctx.globalAlpha=0.72;
     ctx.fillStyle=state.color; ctx.fillText(n,0,0);
   } else if(st==='shadowed'){
     ctx.fillStyle='rgba(30,22,15,0.18)';
@@ -366,6 +423,11 @@ function draw(){
     ctx.fillStyle=state.color; ctx.fillText(n,0,0);
   }
   ctx.restore();
+
+  ctx = ctxSaved;
+  ctx.globalAlpha = state.opacity;
+  ctx.drawImage(layer,0,0);
+  ctx.globalAlpha = 1;
 }
 
 /* ---- drag to position ---- */
@@ -376,7 +438,7 @@ function pt(e){
   const py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
   return {x:px/r.width, y:py/r.height};
 }
-function down(e){ if(!state.img)return; dragging=true; last=pt(e); cv.classList.add('dragging'); e.preventDefault(); }
+function down(e){ if(!state.img)return; if(picking){ sampleAt(e); e.preventDefault(); return; } dragging=true; last=pt(e); cv.classList.add('dragging'); e.preventDefault(); }
 function move(e){
   if(!dragging)return;
   const p=pt(e); state.x=Math.max(-.1,Math.min(1.1,state.x+(p.x-last.x)));
