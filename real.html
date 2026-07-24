@@ -380,7 +380,8 @@ function draw(){
   ctx.rotate(state.rot*Math.PI/180);
   ctx.textAlign='center'; ctx.textBaseline='middle';
   const F=FONTS[state.font]||FONTS.playfair;
-  ctx.font=F.css.replace('{S}', String(fs*F.scale));
+  const FONT_STR=F.css.replace('{S}', String(fs*F.scale));
+  ctx.font=FONT_STR;
 
   if(state.shadow>0){
     ctx.shadowColor='rgba(30,22,15,'+(0.55*state.shadow)+')';
@@ -392,7 +393,7 @@ function draw(){
 
   if(st==='balloons'){
     ctx.restore();                 // balloon renderer positions itself
-    drawBalloonNumber(n, fs, base);
+    drawBalloonNumber(n, fs, base, FONT_STR);
     ctx = ctxSaved;
     ctx.globalAlpha = state.opacity;
     ctx.drawImage(layer,0,0);
@@ -475,10 +476,9 @@ function glyphCanvas(n, fontStr, W, H, tx, ty, rot, erode){
   return c;
 }
 
-function drawBalloonNumber(n, fs, base){
+function drawBalloonNumber(n, fs, base, fontStr){
   const W=cv.width, H=cv.height;
   const tx=state.x*W, ty=state.y*H, rot=state.rot*Math.PI/180;
-  const fontStr=ctx.font;
   const frame=Math.max(2, fs*0.045);
 
   const full   = glyphCanvas(n,fontStr,W,H,tx,ty,rot,0);
@@ -497,10 +497,25 @@ function drawBalloonNumber(n, fs, base){
   const rand=rng(balloonSeed);
   const rMax=fs*0.13*state.balloonSize + fs*0.025;
   const rMin=rMax*0.38;
+
+  // Sample inside the glyph's bounding box, not the whole canvas — the number
+  // covers only a few percent of the frame, so blind sampling almost always misses.
+  let bx0=W, by0=H, bx1=0, by1=0;
+  for(let y=0;y<H;y+=2){
+    for(let x=0;x<W;x+=2){
+      if(im[(y*W+x)*4+3]>128){
+        if(x<bx0)bx0=x; if(x>bx1)bx1=x;
+        if(y<by0)by0=y; if(y>by1)by1=y;
+      }
+    }
+  }
+  if(bx1<=bx0||by1<=by0) return;          // nothing to fill
+  const bw=bx1-bx0, bh=by1-by0;
+
   const placed=[]; let tries=0;
-  while(placed.length<140 && tries<9000){
+  while(placed.length<160 && tries<12000){
     tries++;
-    const x=rand()*W, y=rand()*H;
+    const x=bx0+rand()*bw, y=by0+rand()*bh;
     if(!insideAt(x,y)) continue;
     const r=rMin+rand()*(rMax-rMin);
     let ok=true;
@@ -534,7 +549,19 @@ function drawBalloonNumber(n, fs, base){
   r2.globalCompositeOperation='destination-out';
   r2.drawImage(inner,0,0);
 
-  // --- compose: soft shadow, interior wash, balloons, then frame ---
+  // --- tinted copies (the masks are black; never paint them raw) ---
+  const tint=(srcC, col)=>{
+    const t=document.createElement('canvas'); t.width=W; t.height=H;
+    const g=t.getContext('2d');
+    g.drawImage(srcC,0,0);
+    g.globalCompositeOperation='source-in';
+    g.fillStyle=col; g.fillRect(0,0,W,H);
+    return t;
+  };
+  const fullTinted = tint(full, state.color);                 // shadow caster
+  const wash       = tint(inner, shade(state.color,0.80));    // recessed interior
+
+  // --- compose: shadow, recess, balloons, frame ---
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
   if(state.shadow>0){
@@ -542,10 +569,10 @@ function drawBalloonNumber(n, fs, base){
     ctx.shadowColor='rgba(30,22,15,'+(0.55*state.shadow)+')';
     ctx.shadowBlur=base*0.05*state.shadow;
     ctx.shadowOffsetY=base*0.014*state.shadow;
-    ctx.drawImage(full,0,0);
+    ctx.drawImage(fullTinted,0,0);
     ctx.restore();
   }
-  ctx.globalAlpha=0.9; ctx.drawImage(inner,0,0); ctx.globalAlpha=1;  // recessed interior
+  ctx.drawImage(wash,0,0);
   ctx.drawImage(bc,0,0);
   ctx.drawImage(rc,0,0);
   ctx.restore();
