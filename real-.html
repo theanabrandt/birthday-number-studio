@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Number Studio · The Studio Social System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Bebas+Neue&family=Abril+Fatface&family=Great+Vibes&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FBF8F2; --clay:#B06A4A; --clay-deep:#9c5c40; --ink:#2A241E;
+    --line:#e6ddcf; --line-2:#d8ccb8; --panel:#fdfbf6; --muted:#8a7d6c;
+    --shadow:0 1px 2px rgba(42,36,30,.05),0 12px 40px rgba(42,36,30,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.5}
+  .wrap{max-width:1120px;margin:0 auto;padding:30px 20px 70px}
+  header{text-align:center;margin-bottom:26px}
+  .eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--clay);font-weight:600}
+  h1{font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(28px,5vw,44px);margin:8px 0 6px}
+  .sub{color:var(--muted);font-size:15px;max-width:560px;margin:0 auto}
+  .badge{display:inline-block;margin-top:14px;background:#eef3ec;border:1px solid #cfe0cb;color:#3c6b46;
+         font-size:12.5px;font-weight:600;padding:7px 15px;border-radius:20px}
+  .frame{border-top:1px double var(--line-2);border-bottom:1px double var(--line-2);height:0;max-width:180px;margin:20px auto 0}
+
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:24px;align-items:start;margin-top:26px}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .step{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 11px;display:flex;align-items:center;gap:8px}
+  .step b{font-family:'Playfair Display',serif;font-size:15px;color:var(--clay);font-weight:600}
+  .block+.block{margin-top:20px}
+
+  .drop{border:1.5px dashed var(--line-2);border-radius:13px;padding:24px 14px;text-align:center;cursor:pointer;transition:.15s;background:#fff}
+  .drop:hover,.drop.hot{border-color:var(--clay);background:#fdf6f0}
+  .drop .big{font-family:'Playfair Display',serif;font-size:16px}
+  .drop p{margin:6px 0 0;font-size:12.5px;color:var(--muted)}
+  input[type=file]{display:none}
+
+  .nums{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+  .num{aspect-ratio:1;border:1px solid var(--line-2);background:#fff;border-radius:9px;
+       font-family:'Playfair Display',serif;font-size:17px;color:var(--ink);cursor:pointer;transition:.13s;padding:0}
+  .num:hover{border-color:var(--clay)}
+  .num.on{background:var(--clay);color:#fff;border-color:var(--clay)}
+  .customrow{display:flex;gap:7px;margin-top:9px}
+  .customrow input{flex:1;border:1px solid var(--line-2);border-radius:9px;background:#fff;font-family:inherit;
+       font-size:14px;color:var(--ink);padding:9px 11px}
+  .customrow button{border:1px solid var(--clay);background:var(--clay);color:#fff;font-family:inherit;
+       font-size:12.5px;font-weight:600;padding:9px 15px;border-radius:9px;cursor:pointer}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{border:1px solid var(--line-2);background:#fff;border-radius:18px;padding:7px 13px;font-size:12.5px;cursor:pointer;transition:.13s;color:var(--ink)}
+  .chip:hover{border-color:var(--clay)}
+  .chip.on{background:var(--clay);color:#fff;border-color:var(--clay)}
+
+  .swatches{display:flex;flex-wrap:wrap;gap:7px}
+  .sw{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line-2);cursor:pointer;transition:.13s}
+  .sw.on{box-shadow:0 0 0 2px var(--clay)}
+
+  .ctrl{margin-bottom:12px}
+  .ctrl label{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:5px}
+  .ctrl label .val{color:var(--muted);font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:3px;background:var(--line-2);outline:none;margin:0}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--clay);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--clay);cursor:pointer;border:2px solid #fff}
+
+  .stage{background:repeating-conic-gradient(#f2ede3 0% 25%, #f7f2e9 0% 50%) 50%/20px 20px;
+         border:1px solid var(--line);border-radius:14px;min-height:380px;display:flex;align-items:center;
+         justify-content:center;padding:16px;overflow:hidden}
+  canvas{max-width:100%;max-height:70vh;border-radius:4px;box-shadow:var(--shadow);cursor:grab;background:#fff}
+  canvas.dragging{cursor:grabbing}
+  .empty{text-align:center;color:var(--muted);max-width:280px}
+  .empty .glyph{font-family:'Playfair Display',serif;font-size:56px;color:var(--line-2);line-height:1}
+  .empty p{font-size:13px;margin:10px 0 0}
+
+  .actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .actions button{flex:1 1 30%;min-width:120px;border:1px solid var(--line-2);background:#fff;font-family:inherit;
+       font-size:12.5px;font-weight:500;padding:11px;border-radius:10px;cursor:pointer;transition:.13s}
+  .actions button:hover{border-color:var(--clay)}
+  .actions .primary{background:var(--clay);color:#fff;border-color:var(--clay)}
+  .actions .primary:hover{background:var(--clay-deep)}
+  .note{font-size:11.5px;line-height:1.55;color:var(--muted);background:#f6f0e7;border:1px solid var(--line);
+        border-radius:10px;padding:10px 13px;margin:12px 0 0}
+  .note b{color:var(--ink)}
+  .foot{text-align:center;color:var(--muted);font-size:11.5px;margin-top:26px;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Real Number Studio</div>
+    <h1>Your photo. Not a generated one.</h1>
+    <p class="sub">Drop in your actual session image and place a beautiful number alongside it. Nothing is redrawn &mdash; the child, the light and the moment stay exactly as you shot them.</p>
+    <div class="badge">✓ No AI · your photograph is never altered · unlimited</div>
+    <div class="frame"></div>
+  </header>
+
+  <div class="grid">
+    <!-- controls -->
+    <div class="card">
+      <div class="block">
+        <p class="step"><b>1</b> Add your photo</p>
+        <div class="drop" id="drop">
+          <div class="big">Tap to choose a photo</div>
+          <p>Your original file · JPG or PNG</p>
+        </div>
+        <input type="file" id="file" accept="image/*">
+      </div>
+
+      <div class="block">
+        <p class="step"><b>2</b> Number</p>
+        <div class="nums" id="nums"></div>
+        <div class="customrow">
+          <input type="text" id="customNum" inputmode="numeric" maxlength="3" placeholder="Any number">
+          <button type="button" id="customBtn">Use</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <p class="step"><b>3</b> Font</p>
+        <div class="chips" id="fonts"></div>
+      </div>
+
+      <div class="block">
+        <p class="step"><b>4</b> Style</p>
+        <div class="chips" id="styles"></div>
+        <div style="margin-top:11px" class="swatches" id="swatches"></div>
+      </div>
+
+      <div class="block">
+        <p class="step"><b>5</b> Size &amp; feel</p>
+        <div class="ctrl"><label>Size <span class="val" id="szVal">55%</span></label><input type="range" id="sz" min="10" max="130" value="55"></div>
+        <div class="ctrl"><label>Rotation <span class="val" id="rotVal">0°</span></label><input type="range" id="rot" min="-25" max="25" value="0"></div>
+        <div class="ctrl"><label>Opacity <span class="val" id="opVal">100%</span></label><input type="range" id="op" min="20" max="100" value="100"></div>
+        <div class="ctrl"><label>Soft shadow <span class="val" id="shVal">35%</span></label><input type="range" id="sh" min="0" max="100" value="35"></div>
+        <div class="ctrl" id="depthCtrl"><label>Depth <span class="val" id="dpVal">45%</span></label><input type="range" id="dp" min="0" max="100" value="45"></div>
+        <div class="ctrl" id="lightCtrl"><label>Light direction <span class="val" id="ltVal">135°</span></label><input type="range" id="lt" min="0" max="359" value="135"></div>
+        <p class="hint" style="font-size:11.5px;color:var(--muted);margin:2px 0 0">Drag the number on the preview to move it.</p>
+      </div>
+    </div>
+
+    <!-- stage -->
+    <div class="card">
+      <p class="step"><b>·</b> Preview</p>
+      <div class="stage" id="stage">
+        <div class="empty" id="empty">
+          <div class="glyph">1</div>
+          <p>Add a photo to begin. Your image is never uploaded anywhere &mdash; everything happens on your device.</p>
+        </div>
+        <canvas id="cv" style="display:none"></canvas>
+      </div>
+      <div class="actions" id="actions" style="display:none">
+        <button class="primary" id="dlBtn">Download</button>
+        <button id="centerBtn">Centre number</button>
+        <button id="resetBtn">Start over</button>
+      </div>
+      <p class="note" id="note" style="display:none">
+        <b>Full resolution.</b> Your export matches your original file exactly &mdash; same pixels, same quality, print-ready at whatever size you shot.
+        Because nothing is generated, this studio has no limit and no AI watermark.
+      </p>
+    </div>
+  </div>
+
+  <p class="foot">
+    Real Number Studio &middot; part of The Studio Social System<br>
+    Your photograph never leaves your device.
+  </p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+
+const STYLES = {
+  prop:    { label:'3D prop',  depth:true },
+  bevel:   { label:'Bevelled', depth:true },
+  solid:   { label:'Flat' },
+  shadowed:{ label:'Raised' },
+  outline: { label:'Outline' },
+  soft:    { label:'Soft fill' }
+};
+const FONTS = {
+  playfair: { label:'Elegant',   css:'700 {S}px "Playfair Display", Georgia, serif',      scale:1.00 },
+  cormorant:{ label:'Refined',   css:'600 {S}px "Cormorant Garamond", Georgia, serif',    scale:1.14 },
+  dmsans:   { label:'Modern',    css:'700 {S}px "DM Sans", Helvetica, Arial, sans-serif', scale:0.94 },
+  poppins:  { label:'Rounded',   css:'800 {S}px "Poppins", Helvetica, Arial, sans-serif', scale:0.92 },
+  bebas:    { label:'Poster',    css:'400 {S}px "Bebas Neue", Impact, sans-serif',        scale:1.22 },
+  abril:    { label:'Statement', css:'400 {S}px "Abril Fatface", Georgia, serif',         scale:0.98 },
+  vibes:    { label:'Script',    css:'400 {S}px "Great Vibes", cursive',                  scale:1.30 }
+};
+const COLORS = ['#FFFFFF','#FBF8F2','#EDE6DA','#D8CCB8','#B06A4A','#2A241E','#8FA394','#C9A227','#B9BDC2'];
+
+const state = {
+  img:null, number:'1', style:'prop', color:'#FFFFFF', font:'playfair', depth:0.45, light:135,
+  x:0.72, y:0.55, size:0.55, rot:0, opacity:1, shadow:0.35
+};
+
+/* ---- colour helpers for 3D shading ---- */
+function hexToRgb(h){
+  h=h.replace('#',''); if(h.length===3) h=h.split('').map(c=>c+c).join('');
+  return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];
+}
+function shade(hex, mult){
+  const [r,g,b]=hexToRgb(hex);
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*mult)));
+  return 'rgb('+f(r)+','+f(g)+','+f(b)+')';
+}
+
+/* ---- pickers ---- */
+const numsEl=$('nums');
+for(let i=1;i<=12;i++){
+  const b=document.createElement('button');
+  b.className='num'+(i===1?' on':''); b.textContent=i; b.dataset.n=String(i);
+  b.onclick=()=>pickNumber(String(i));
+  numsEl.appendChild(b);
+}
+function pickNumber(n){
+  state.number=n;
+  document.querySelectorAll('.num').forEach(x=>x.classList.toggle('on',x.dataset.n===n));
+  $('empty').querySelector('.glyph').textContent=n;
+  draw();
+}
+$('customBtn').onclick=()=>{
+  const v=($('customNum').value||'').replace(/[^0-9]/g,'').slice(0,3);
+  if(!v) return;
+  pickNumber(v);
+  document.querySelectorAll('.num').forEach(x=>x.classList.remove('on'));
+};
+$('customNum').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();$('customBtn').click();} });
+
+const fontsEl=$('fonts');
+Object.entries(FONTS).forEach(([k,v],i)=>{
+  const c=document.createElement('button');
+  c.className='chip'+(i===0?' on':''); c.textContent=v.label; c.dataset.k=k;
+  // preview each option in its own face
+  c.style.fontFamily = v.css.replace(/^[^ ]+ \{S\}px /,'');
+  c.onclick=()=>{ state.font=k; fontsEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); draw(); };
+  fontsEl.appendChild(c);
+});
+
+const stylesEl=$('styles');
+Object.entries(STYLES).forEach(([k,v],i)=>{
+  const c=document.createElement('button');
+  c.className='chip'+(k===state.style?' on':''); c.textContent=v.label; c.dataset.k=k;
+  c.onclick=()=>{ state.style=k; stylesEl.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.k===k)); syncDepthCtrls(); draw(); };
+  stylesEl.appendChild(c);
+});
+
+const swEl=$('swatches');
+COLORS.forEach((col,i)=>{
+  const s=document.createElement('button');
+  s.className='sw'+(i===0?' on':''); s.style.background=col; s.dataset.c=col;
+  s.onclick=()=>{ state.color=col; swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x.dataset.c===col)); draw(); };
+  swEl.appendChild(s);
+});
+
+/* ---- upload ---- */
+$('drop').onclick=()=>$('file').click();
+['dragover','dragenter'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.add('hot')}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev,e=>{e.preventDefault();$('drop').classList.remove('hot')}));
+$('drop').addEventListener('drop',e=>{ if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+$('file').onchange=e=>{ if(e.target.files[0]) loadFile(e.target.files[0]); };
+
+function loadFile(f){
+  if(!f.type.startsWith('image/')) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{
+      state.img=im;
+      cv.width=im.naturalWidth; cv.height=im.naturalHeight;
+      fitStage();
+      $('empty').style.display='none';
+      cv.style.display='block';
+      $('actions').style.display='flex';
+      $('note').style.display='block';
+      draw();
+      if(document.fonts && document.fonts.ready){ document.fonts.ready.then(draw); }
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
+}
+function fitStage(){
+  const st=$('stage');
+  const maxW=st.clientWidth-32, maxH=Math.min(window.innerHeight*0.7, 720);
+  const ar=cv.width/cv.height;
+  let w=maxW, h=w/ar;
+  if(h>maxH){ h=maxH; w=h*ar; }
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+}
+window.addEventListener('resize',()=>{ if(state.img){ fitStage(); }});
+
+/* ---- draw ---- */
+function draw(){
+  if(!state.img) return;
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(state.img,0,0,W,H);          // the real photo, untouched
+
+  const base=Math.min(W,H);
+  const fs=base*state.size*1.6;
+  ctx.save();
+  ctx.translate(state.x*W, state.y*H);
+  ctx.rotate(state.rot*Math.PI/180);
+  ctx.globalAlpha=state.opacity;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const F=FONTS[state.font]||FONTS.playfair;
+  ctx.font=F.css.replace('{S}', String(fs*F.scale));
+
+  if(state.shadow>0){
+    ctx.shadowColor='rgba(30,22,15,'+(0.55*state.shadow)+')';
+    ctx.shadowBlur=base*0.05*state.shadow;
+    ctx.shadowOffsetY=base*0.012*state.shadow;
+  }
+  const n=state.number;
+  const st=state.style;
+
+  if(st==='prop' || st==='bevel'){
+    // light comes FROM this angle, so the solid side falls opposite it
+    const a=(state.light+180)*Math.PI/180;
+    const dx=Math.cos(a), dy=Math.sin(a);
+    const depthPx = base*0.055*state.depth*(st==='bevel'?0.35:1);
+    const steps = Math.max(8, Math.round(depthPx*1.4));
+
+    // extruded side, darkest at the back
+    ctx.shadowColor = state.shadow>0 ? 'rgba(30,22,15,'+(0.5*state.shadow)+')' : 'transparent';
+    for(let i=steps;i>=1;i--){
+      const t=i/steps;
+      ctx.fillStyle = shade(state.color, 0.52 + 0.26*(1-t));
+      ctx.fillText(n, dx*depthPx*t, dy*depthPx*t);
+      if(i===steps) ctx.shadowColor='transparent';   // shadow only from the back face
+    }
+    // front face, with a soft gradient so it reads as a real surface
+    const fw = ctx.measureText(n).width;
+    const g = ctx.createLinearGradient(-fw/2, -fs*0.5, fw/2, fs*0.5);
+    g.addColorStop(0, shade(state.color, 1.0));
+    g.addColorStop(1, shade(state.color, 0.90));
+    ctx.fillStyle = g;
+    ctx.fillText(n,0,0);
+
+    // catch-light along the lit edge
+    if(st==='bevel'){
+      ctx.save();
+      ctx.globalAlpha = state.opacity*0.5;
+      ctx.lineWidth = Math.max(1, base*0.0035);
+      ctx.strokeStyle = shade(state.color, 1.35);
+      ctx.translate(-dx*depthPx*0.35, -dy*depthPx*0.35);
+      ctx.strokeText(n,0,0);
+      ctx.restore();
+    }
+  } else if(st==='outline'){
+    ctx.lineWidth=Math.max(2, base*0.006);
+    ctx.strokeStyle=state.color;
+    ctx.strokeText(n,0,0);
+  } else if(st==='soft'){
+    ctx.globalAlpha=state.opacity*0.72;
+    ctx.fillStyle=state.color; ctx.fillText(n,0,0);
+  } else if(st==='shadowed'){
+    ctx.fillStyle='rgba(30,22,15,0.18)';
+    ctx.fillText(n, base*0.012, base*0.014);
+    ctx.shadowColor='transparent';
+    ctx.fillStyle=state.color; ctx.fillText(n,0,0);
+  } else {
+    ctx.fillStyle=state.color; ctx.fillText(n,0,0);
+  }
+  ctx.restore();
+}
+
+/* ---- drag to position ---- */
+let dragging=false,last=null;
+function pt(e){
+  const r=cv.getBoundingClientRect();
+  const px=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+  const py=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+  return {x:px/r.width, y:py/r.height};
+}
+function down(e){ if(!state.img)return; dragging=true; last=pt(e); cv.classList.add('dragging'); e.preventDefault(); }
+function move(e){
+  if(!dragging)return;
+  const p=pt(e); state.x=Math.max(-.1,Math.min(1.1,state.x+(p.x-last.x)));
+  state.y=Math.max(-.1,Math.min(1.1,state.y+(p.y-last.y))); last=p; draw();
+}
+function up(){ dragging=false; cv.classList.remove('dragging'); }
+cv.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false}); window.addEventListener('touchmove',move,{passive:false}); window.addEventListener('touchend',up);
+
+/* ---- sliders ---- */
+function bind(id,fn,fmt){ const el=$(id); el.oninput=()=>{ fn(+el.value); if(fmt)$(id+'Val').textContent=fmt(+el.value); draw(); }; }
+bind('sz',v=>state.size=v/100,v=>v+'%');
+bind('rot',v=>state.rot=v,v=>v+'°');
+bind('op',v=>state.opacity=v/100,v=>v+'%');
+bind('sh',v=>state.shadow=v/100,v=>v+'%');
+bind('dp',v=>state.depth=v/100,v=>v+'%');
+bind('lt',v=>state.light=v,v=>v+'\u00b0');
+
+function syncDepthCtrls(){
+  const show = !!(STYLES[state.style]||{}).depth;
+  $('depthCtrl').style.display = show ? 'block':'none';
+  $('lightCtrl').style.display = show ? 'block':'none';
+}
+
+/* ---- actions ---- */
+syncDepthCtrls();
+
+$('centerBtn').onclick=()=>{ state.x=0.5; state.y=0.5; draw(); };
+$('resetBtn').onclick=()=>{
+  state.img=null; cv.style.display='none'; $('empty').style.display='block';
+  $('actions').style.display='none'; $('note').style.display='none'; $('file').value='';
+};
+$('dlBtn').onclick=()=>{
+  const a=document.createElement('a');
+  a.download='number-'+state.number+'-'+Date.now()+'.png';
+  a.href=cv.toDataURL('image/png'); a.click();
+};
+</script>
+</body>
+</html>
